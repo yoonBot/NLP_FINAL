@@ -1,35 +1,3 @@
-#!/usr/bin/env python3
-
-'''
-Trains and evaluates GPT2SentimentClassifier on SST and CFIMDB
-'''
-
-import random, numpy as np, argparse
-from types import SimpleNamespace
-import csv
-
-import torch
-import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
-from transformers import GPT2Tokenizer
-from sklearn.metrics import f1_score, accuracy_score
-
-from models.gpt2 import GPT2Model
-from optimizer import AdamW
-from tqdm import tqdm
-
-TQDM_DISABLE = False
-
-
-# Fix the random seed.
-def seed_everything(seed=11711):
-  random.seed(seed)
-  #!/usr/bin/env python3
-
-'''
-Trains and evaluates GPT2SentimentClassifier on SST and CFIMDB
-'''
-
 import random, numpy as np, argparse
 from types import SimpleNamespace
 import csv
@@ -106,8 +74,6 @@ class GPT2SentimentClassifier(torch.nn.Module):
     logit = self.classifier(x)
 
     return logit
-
-
 
 class SentimentDataset(Dataset):
   def __init__(self, dataset, args):

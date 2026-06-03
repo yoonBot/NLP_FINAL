@@ -60,12 +60,6 @@ class GPT2Model(GPTPreTrainedModel):
     return hidden_states
 
 
-    ### TODO: Use pos_ids to get position embedding from self.pos_embedding into pos_embeds.
-    ###       Then, add two embeddings together; then apply dropout and return.
-    ### YOUR CODE HERE
-    raise NotImplementedError
-
-
   def encode(self, hidden_states, attention_mask):
     """
     hidden_states: the output from the embedding layer [batch_size, seq_len, hidden_size]
@@ -157,5 +151,3 @@ class GPT2Model(GPTPreTrainedModel):
     our_model.final_layer_norm.bias.data = gpt_model.state_dict()['ln_f.bias']
 
     return our_model
-
-

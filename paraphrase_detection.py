@@ -182,7 +182,7 @@ def test(args):
 
   para_dev_dataloader = DataLoader(para_dev_data, shuffle=False, batch_size=args.batch_size,
                                    collate_fn=para_dev_data.collate_fn)
-  para_test_dataloader = DataLoader(para_test_data, shuffle=True, batch_size=args.batch_size,
+  para_test_dataloader = DataLoader(para_test_data, shuffle=False, batch_size=args.batch_size,
                                     collate_fn=para_test_data.collate_fn)
 
   dev_para_acc, _, dev_para_y_pred, _, dev_para_sent_ids = model_eval_paraphrase(para_dev_dataloader, model, device)

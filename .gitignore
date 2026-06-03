@@ -21,7 +21,6 @@ venv/
 
 # Checkpoints
 checkpoints/
-models/
 
 # Environment Variables
 .env
