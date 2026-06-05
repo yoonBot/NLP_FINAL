@@ -7,11 +7,9 @@ Running:
 trains your ReasoningGPT model and writes the required submission files.
 '''
 
-import os 
+import os
 import argparse
-#from pyexpat import model
 import random
-#from sonnet_generation import SonnetGPT
 import torch
 
 import numpy as np
@@ -45,7 +43,7 @@ def seed_everything(seed=11711):
 
 
 class ReasoningGPT(nn.Module):
-  """Your GPT-2 Model designed for paraphrase detection."""
+  """GPT-2 model for GSM8K reasoning generation."""
 
   def __init__(self, args):
     super().__init__()
@@ -53,15 +51,14 @@ class ReasoningGPT(nn.Module):
     self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     self.tokenizer.pad_token = self.tokenizer.eos_token
 
-    # By default, fine-tune the full model. TODO: this is maybe not idea.
+    # By default, fine-tune the full model. TODO: this is maybe not ideal.
     for param in self.gpt.parameters():
       param.requires_grad = True
 
   def forward(self, input_ids, attention_mask):
     """
-    This is similar to the forward for ParaphraseGPT, but we now want to produce a logit for each token in our sequence;
-    not just the last token! This will allow our model to learn the natural language distribution that composes sonnets,
-    not just the distribution over next tokens for the last token!
+    Returns logits for every token position in the sequence (shape: [batch, seq_len, vocab_size]),
+    enabling next-token prediction loss across the full reasoning chain.
     """
     ### YOUR CODE HERE
 
@@ -127,9 +124,8 @@ class ReasoningGPT(nn.Module):
       filtered_probs /= filtered_probs.sum(dim=-1, keepdim=True)  # Normalize probabilities
 
       # Sample from filtered distribution
-      # sampled_index = torch.multinomial(filtered_probs, 1)
-      # sampled_token = sorted_indices.gather(dim=-1, index=sampled_index)
-      sampled_token = torch.argmax(logits_last_token, dim=-1, keepdim=True)
+      sampled_index = torch.multinomial(filtered_probs, 1)
+      sampled_token = sorted_indices.gather(dim=-1, index=sampled_index)
 
       # Stop if end-of-sequence token is reached
       if sampled_token.item() == self.tokenizer.eos_token_id:
@@ -168,19 +164,18 @@ def save_model(model, optimizer, args, filepath):
 
 
 def train(args):
-  """Train GPT-2 for paraphrase detection on the Quora dataset."""
+  """Train GPT-2 for reasoning generation on GSM8K."""
   device = torch.device('cuda') if args.use_gpu else torch.device('cpu')
   # Create the data and its corresponding datasets and dataloader.
-  reasoning_dataset = ReasoningDataset(args.reasoning_path)
+  reasoning_dataset = ReasoningDataset(args.reasoning_path, mask_prompt=args.mask_prompt)
   print(reasoning_dataset.examples[0])
   reasoning_dataloader = DataLoader(reasoning_dataset, shuffle=True, batch_size=args.batch_size,
                                     collate_fn=reasoning_dataset.collate_fn)
 
-  # Create the held-out dataset: these only have the first 3 lines. Your job is to fill in the rest!
+  # Held-out dataset: Question + "Reasoning:" prompt only, no gold answer.
   held_out_reasoning_dataset = ReasoningDataset(args.held_out_reasoning_path)
   print("Held-out examples:", len(held_out_reasoning_dataset))
 
-  args = add_arguments(args)
   model = ReasoningGPT(args)
   model = model.to(device)
 
@@ -205,6 +200,14 @@ def train(args):
       logits = rearrange(logits[:, :-1].contiguous(), 'b t d -> (b t) d')  # Ignore the last prediction in the sequence.
       labels = b_ids[:, 1:].clone()
       labels[b_mask[:, 1:] == 0] = -100  # Set padding token labels to -100 so they are ignored in the loss.
+
+      # Prompt-loss masking: train only on the reasoning completion, not the
+      # question tokens. labels are shifted by 1, so the boundary is p_len - 1.
+      if args.mask_prompt and 'prompt_lens' in batch:
+        for i, p_len in enumerate(batch['prompt_lens']):
+          if p_len > 1:
+            labels[i, :p_len - 1] = -100
+
       loss = F.cross_entropy(
         logits,
         labels.flatten(),
@@ -221,28 +224,28 @@ def train(args):
     print(f"Epoch {epoch}: train loss :: {train_loss :.3f}.")
     print('Generating several output reasoning sequences...')
     model.eval()
-    for batch in list(held_out_reasoning_dataset)[:1]:
-      ids = model.tokenizer(batch[1])["input_ids"]
-      print("Original token length:", len(ids))
-      encoding = model.tokenizer(
-        batch[1],
-        return_tensors='pt',
-        padding=True,
-        truncation=True,
-        max_length=900
-      ).to(device)
+    batch = held_out_reasoning_dataset[0]
+    ids = model.tokenizer(batch[1])["input_ids"]
+    print("Original token length:", len(ids))
+    encoding = model.tokenizer(
+      batch[1],
+      return_tensors='pt',
+      padding=True,
+      truncation=True,
+      max_length=512
+    ).to(device)
 
-      output = model.generate(
-        encoding['input_ids'],
-        temperature=args.temperature,
-        top_p=args.top_p
-      )
+    output = model.generate(
+      encoding['input_ids'],
+      temperature=args.temperature,
+      top_p=args.top_p
+    )
 
     print(output[1])
 
     print("\n\n")
 
-    # TODO: consider a stopping condition to prevent overfitting on the small dataset of sonnets.
+    # TODO: consider early stopping to prevent overfitting.
     save_model(model, optimizer, args, f'{epoch}_{args.filepath}')
 
 
@@ -310,6 +313,8 @@ def get_args():
   parser.add_argument("--seed", type=int, default=11711)
   parser.add_argument("--epochs", type=int, default=10)
   parser.add_argument("--use_gpu", action='store_true')
+  parser.add_argument("--mask_prompt", action='store_true',
+                      help="Train only on the reasoning completion (mask question tokens).")
 
   # Generation parameters.
   parser.add_argument("--temperature", type=float, help="softmax temperature.", default=0.7)
@@ -319,7 +324,7 @@ def get_args():
   parser.add_argument("--batch_size", help='The training batch size.', type=int, default=8)
   parser.add_argument("--lr", type=float, help="learning rate", default=1e-5)
   parser.add_argument("--model_size", type=str, help="The model size as specified on hugging face.",
-                      choices=['gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'], default='gpt2')
+                      choices=['gpt2', 'gpt2-medium', 'gpt2-large'], default='gpt2')
 
   args = parser.parse_args()
   return args
@@ -346,6 +351,7 @@ def add_arguments(args):
 
 if __name__ == "__main__":
   args = get_args()
+  args = add_arguments(args)
   args.filepath = f'{args.epochs}-{args.lr}-reasoning.pt'  # Save path.
   seed_everything(args.seed)  # Fix the seed for reproducibility.
   train(args)
