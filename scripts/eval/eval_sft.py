@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
+import sys
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_ROOT))
+sys.path.insert(0, str(_ROOT / "scripts" / "train"))
+
 """
-Evaluate a trained ReasoningGPT checkpoint on the MultiArith dev set.
+Evaluate a trained ReasoningGPT checkpoint on the GSM8K dev set.
 
 Usage:
-    # SFT checkpoint (.pt)
-    python eval_multiarith.py --checkpoint 9_10-1e-05-reasoning.pt --use_gpu
-
-    # DPO / HuggingFace model directory
-    python eval_multiarith.py --checkpoint outputs/dpo_gpt2_model --use_gpu
+    python eval_sft.py --checkpoint 9_10-1e-05-reasoning.pt --use_gpu
+    python eval_sft.py --checkpoint outputs/dpo_gpt2_model --use_gpu  # HF format
 
 Outputs:
-    outputs/<name>_multiarith_metrics.json    aggregate metrics
-    outputs/<name>_multiarith_generations.txt full generations per dev item
+    outputs/<name>_metrics.json   aggregate metrics
+    outputs/<name>_generations.txt  full generations per dev item
 """
 
 import argparse
@@ -23,10 +26,10 @@ import torch
 from reasoning_generation import ReasoningGPT, add_arguments, seed_everything
 import gsm8k_eval
 
-DEV_JSONL = os.path.join("data", "multiarith_dev.jsonl")
+DEV_JSONL = os.path.join("data", "gsm8k_dev.jsonl")
 
 
-def load_dev(path: str) -> list[dict]:
+def load_dev(path):
     records = []
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -39,9 +42,11 @@ def main():
     seed_everything(args.seed)
     device = torch.device("cuda") if args.use_gpu else torch.device("cpu")
 
+    # Load model — supports both .pt checkpoint and HF-saved directory
     if os.path.isdir(args.checkpoint):
+        # DPO model saved via HuggingFace trainer
         from transformers import GPT2LMHeadModel, GPT2Tokenizer
-        model = GPT2LMHeadModel.from_pretrained(args.checkpoint).to(device)
+        hf_model = GPT2LMHeadModel.from_pretrained(args.checkpoint).to(device)
         tokenizer = GPT2Tokenizer.from_pretrained(args.checkpoint)
         tokenizer.pad_token = tokenizer.eos_token
         use_hf = True
@@ -56,7 +61,6 @@ def main():
     dev = load_dev(DEV_JSONL)
     if args.limit:
         dev = dev[: args.limit]
-    print(f"Evaluating on {len(dev)} MultiArith dev examples...")
 
     eval_records = []
     gen_lines = []
@@ -69,7 +73,7 @@ def main():
                 prompt, return_tensors="pt", truncation=True, max_length=512
             ).to(device)
             with torch.no_grad():
-                out_ids = model.generate(
+                out_ids = hf_model.generate(
                     **enc,
                     max_new_tokens=args.max_new_tokens,
                     do_sample=True,
@@ -97,12 +101,11 @@ def main():
 
     metrics = gsm8k_eval.evaluate(eval_records)
     metrics["checkpoint"] = args.checkpoint
-    metrics["dataset"] = "multiarith"
 
     name = os.path.splitext(os.path.basename(args.checkpoint.rstrip("/\\")))[0]
     os.makedirs("outputs", exist_ok=True)
-    met_path = os.path.join("outputs", f"{name}_multiarith_metrics.json")
-    gen_path = os.path.join("outputs", f"{name}_multiarith_generations.txt")
+    met_path = os.path.join("outputs", f"{name}_metrics.json")
+    gen_path = os.path.join("outputs", f"{name}_generations.txt")
 
     with open(met_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)

@@ -20,6 +20,11 @@ Outputs:
     data/gsm8k_dev_prompts.txt   prompt-only blocks for inference (held-out format)
 """
 
+import sys
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_ROOT / "scripts" / "eval"))
+
 import json
 import os
 import random
@@ -30,7 +35,7 @@ N_SFT = 3000
 N_DPO = 1500
 N_DEV = 500
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+DATA_DIR = str(_ROOT / "data")
 SRC = os.path.join(DATA_DIR, "gsm8k_small_train.txt")
 
 # Import the shared parser so gold extraction is identical to evaluation.

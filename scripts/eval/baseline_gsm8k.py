@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+import sys
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_ROOT))
+sys.path.insert(0, str(_ROOT / "scripts" / "train"))
+
 """
 Base GPT-2 baseline on the GSM8K dev split (RESEARCH_DESIGN.md priority #1).
 
