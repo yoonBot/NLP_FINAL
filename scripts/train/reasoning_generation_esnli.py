@@ -133,7 +133,19 @@ def train(args):
   lr = args.lr
   optimizer = AdamW(model.parameters(), lr=lr)
 
-  for epoch in range(args.epochs):
+  start_epoch = 0
+  if args.resume_epoch >= 0:
+    ckpt = os.path.join(args.output_dir, f'{args.resume_epoch}_{args.filepath}')
+    saved = torch.load(ckpt, weights_only=False)
+    model.load_state_dict(saved['model'])
+    optimizer.load_state_dict(saved['optim'])
+    random.setstate(saved['system_rng'])
+    np.random.set_state(saved['numpy_rng'])
+    torch.random.set_rng_state(saved['torch_rng'])
+    start_epoch = args.resume_epoch + 1
+    print(f"Resumed from epoch {args.resume_epoch} ({ckpt})")
+
+  for epoch in range(start_epoch, args.epochs):
     model.train()
     train_loss = 0
     num_batches = 0
@@ -192,12 +204,12 @@ def train(args):
       print(output)
       print("\n\n")
 
-    save_model(model, optimizer, args, f'{epoch}_{args.filepath}')
+    save_model(model, optimizer, args, os.path.join(args.output_dir, f'{epoch}_{args.filepath}'))
 
 @torch.no_grad()
 def generate_submission_reasonings(args):
   device = torch.device('cuda') if args.use_gpu else torch.device('cpu')
-  saved = torch.load(f'{args.epochs-1}_{args.filepath}', weights_only=False)
+  saved = torch.load(os.path.join(args.output_dir, f'{args.epochs-1}_{args.filepath}'), weights_only=False)
 
   model = ESNLIGPT(saved['args'])
   model.load_state_dict(saved['model'])
@@ -247,6 +259,8 @@ def get_args():
   parser.add_argument("--lr", type=float, help="learning rate", default=1e-5)
   parser.add_argument("--model_size", type=str, help="The model size as specified on hugging face.",
                       choices=['gpt2', 'gpt2-medium', 'gpt2-large'], default='gpt2')
+  parser.add_argument("--output_dir", type=str, default=".", help="Directory to save checkpoints (use /mnt/... on cluster).")
+  parser.add_argument("--resume_epoch", type=int, default=-1, help="Resume training from this epoch (-1 = start fresh).")
 
   args = parser.parse_args()
   return args
@@ -271,7 +285,8 @@ def add_arguments(args):
 if __name__ == "__main__":
   args = get_args()
   args = add_arguments(args)
-  args.filepath = f'{args.epochs}-{args.lr}-esnli.pt'
+  args.filepath = f'{args.epochs}-{args.lr}-esnli.pt'  # Save path (basename only; output_dir is prepended at save/load time).
+  os.makedirs(args.output_dir, exist_ok=True)
   seed_everything(args.seed)
   train(args)
   generate_submission_reasonings(args)
