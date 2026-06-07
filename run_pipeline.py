@@ -34,8 +34,12 @@ def get_args():
                    help="Output dir for checkpoints and metrics (use /mnt/ for persistence)")
     p.add_argument("--use_gpu", action="store_true")
     p.add_argument("--seed", type=int, default=11711)
-    p.add_argument("--batch_size", type=int, default=32,
-                   help="Training batch size (32 is safe for A100 11GB with gpt2-small)")
+    p.add_argument("--batch_size", type=int, default=8,
+                   help="Training batch size")
+    p.add_argument("--gsm8k_epochs", type=int, default=20,
+                   help="Max epochs for GSM8K experiments (early stopping with patience=4)")
+    p.add_argument("--ma_epochs", type=int, default=40,
+                   help="Max epochs for MultiArith experiment (early stopping with patience=8)")
     p.add_argument("--skip_data_prep", action="store_true",
                    help="Skip data generation step (if already done)")
     return p.parse_args()
@@ -222,19 +226,19 @@ def run_experiments(args, recipe_path):
     EXPERIMENTS = [
         {"id": "MA_plan_numaug",
          "init": "arith", "recipe": "plan_numaug", "rung": "multiarith",
-         "epochs": 40, "lr": 1e-5, "patience": 8, "batch_size": args.batch_size},
+         "epochs": args.ma_epochs, "lr": 1e-5, "patience": 8, "batch_size": args.batch_size},
         {"id": "G_A1_direct",
          "init": "arith", "recipe": "gsm8k", "rung": "gsm8k",
-         "epochs": 12, "lr": 1e-5, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
+         "epochs": args.gsm8k_epochs, "lr": 1e-5, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
         {"id": "G_A2_mixed",
          "init": "arith", "recipe": "gsm8k_plus_ma", "rung": "gsm8k",
-         "epochs": 12, "lr": 1e-5, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
+         "epochs": args.gsm8k_epochs, "lr": 1e-5, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
         {"id": "G_B1_curriculum",
          "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k", "rung": "gsm8k",
-         "epochs": 12, "lr": 5e-6, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
+         "epochs": args.gsm8k_epochs, "lr": 5e-6, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
         {"id": "G_B2_curriculum_mix",
          "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plus_ma", "rung": "gsm8k",
-         "epochs": 12, "lr": 5e-6, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
+         "epochs": args.gsm8k_epochs, "lr": 5e-6, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
     ]
 
     device_str = "cuda" if args.use_gpu else "cpu"
