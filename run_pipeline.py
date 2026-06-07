@@ -195,16 +195,48 @@ def run_data_prep():
     else:
         print("[skip] template labels already computed")
 
+    # 1-k: GSM8K plan-CoT variants (skeleton + entity, each 3000 blocks)
+    SKEL = "data/gsm8k_sft_train_plan_skeleton.txt"
+    ENT  = "data/gsm8k_sft_train_plan_entity.txt"
+    if not _exists(SKEL) or not _exists(ENT):
+        print("Running generate_gsm8k_plan.py ...")
+        _run(["scripts/generate/generate_gsm8k_plan.py"])
+    else:
+        print("[skip] gsm8k plan variants already exist")
+
+    # 1-l: GSM8K plan-CoT + MA combos (B2 mixed arms)
+    SKEL_PLUS_MA = "data/gsm8k_plan_skeleton_plus_ma.txt"
+    ENT_PLUS_MA  = "data/gsm8k_plan_entity_plus_ma.txt"
+    MA_PLAN_AUG  = "data/multiarith_sft_train_plan_aug.txt"
+    for combo_path, gsm_path in [
+        (SKEL_PLUS_MA, SKEL),
+        (ENT_PLUS_MA,  ENT),
+    ]:
+        if not _exists(combo_path):
+            print(f"Building {combo_path} ...")
+            gsm_text = open(gsm_path).read() if _exists(gsm_path) else ""
+            ma_text  = open(MA_PLAN_AUG).read() if _exists(MA_PLAN_AUG) else ""
+            with open(combo_path, "w") as f:
+                f.write(gsm_text)
+                if ma_text:
+                    f.write("\n" + ma_text)
+        else:
+            print(f"[skip] {combo_path} already exists")
+
     ENTITY_SFT = "data/multiarith_sft_train_entity_aug.txt"
     recipe_path = {
-        "base":              "data/multiarith_sft_train_base.txt",
-        "numaug":            "data/multiarith_sft_train_aug.txt",
-        "plan_base":         "data/multiarith_sft_train_plan.txt",
-        "plan_numaug":       "data/multiarith_sft_train_plan_aug.txt",
-        "entity_numaug":     ENTITY_SFT,
-        "gsm8k":             "data/gsm8k_sft_train.txt",
-        "gsm8k_plus_ma":     "data/gsm8k_plus_ma_sft_train.txt",
-        "gsm8k_plus_entity": "data/gsm8k_plus_entity_sft_train.txt",
+        "base":                      "data/multiarith_sft_train_base.txt",
+        "numaug":                    "data/multiarith_sft_train_aug.txt",
+        "plan_base":                 "data/multiarith_sft_train_plan.txt",
+        "plan_numaug":               "data/multiarith_sft_train_plan_aug.txt",
+        "entity_numaug":             ENTITY_SFT,
+        "gsm8k":                     "data/gsm8k_sft_train.txt",
+        "gsm8k_plus_ma":             "data/gsm8k_plus_ma_sft_train.txt",
+        "gsm8k_plus_entity":         "data/gsm8k_plus_entity_sft_train.txt",
+        "gsm8k_plan_skeleton":       SKEL,
+        "gsm8k_plan_entity":         ENT,
+        "gsm8k_plan_skeleton_plus_ma": SKEL_PLUS_MA,
+        "gsm8k_plan_entity_plus_ma": ENT_PLUS_MA,
     }
     print("\nRecipe → file check:")
     for recipe, path in recipe_path.items():
@@ -223,22 +255,46 @@ def run_experiments(args, recipe_path):
     os.makedirs(args.out_dir, exist_ok=True)
     log_path = os.path.join(args.out_dir, "run_log.txt")
 
+    _gsm_lr   = 1e-5
+    _curr_lr  = 5e-6
+    _pat      = 4
+    _bs       = args.batch_size
+    _ep       = args.gsm8k_epochs
+
     EXPERIMENTS = [
+        # ── Stage 0: MultiArith curriculum base (arith pretrain → MA plan CoT) ──
         {"id": "MA_plan_numaug",
          "init": "arith", "recipe": "plan_numaug", "rung": "multiarith",
-         "epochs": args.ma_epochs, "lr": 1e-5, "patience": 8, "batch_size": args.batch_size},
+         "epochs": args.ma_epochs, "lr": 1e-5, "patience": 8, "batch_size": _bs},
+
+        # ── A-arms: arith pretrain → GSM8K direct (baselines) ────────────────
         {"id": "G_A1_direct",
          "init": "arith", "recipe": "gsm8k", "rung": "gsm8k",
-         "epochs": args.gsm8k_epochs, "lr": 1e-5, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
+         "epochs": _ep, "lr": _gsm_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
         {"id": "G_A2_mixed",
          "init": "arith", "recipe": "gsm8k_plus_ma", "rung": "gsm8k",
-         "epochs": args.gsm8k_epochs, "lr": 1e-5, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
-        {"id": "G_B1_curriculum",
+         "epochs": _ep, "lr": _gsm_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
+
+        # ── B-std: curriculum → GSM8K standard CoT (format-mismatch baseline) ─
+        {"id": "G_B1_std",
          "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k", "rung": "gsm8k",
-         "epochs": args.gsm8k_epochs, "lr": 5e-6, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
-        {"id": "G_B2_curriculum_mix",
-         "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plus_ma", "rung": "gsm8k",
-         "epochs": args.gsm8k_epochs, "lr": 5e-6, "patience": 4, "batch_size": args.batch_size, "eval_n": 150},
+         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
+
+        # ── B-skeleton: curriculum → GSM8K skeleton plan CoT ─────────────────
+        {"id": "G_B1_skel",
+         "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plan_skeleton", "rung": "gsm8k",
+         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
+        {"id": "G_B2_skel",
+         "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plan_skeleton_plus_ma", "rung": "gsm8k",
+         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
+
+        # ── B-entity: curriculum → GSM8K entity-abstract plan CoT (PS+) ──────
+        {"id": "G_B1_ent",
+         "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plan_entity", "rung": "gsm8k",
+         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
+        {"id": "G_B2_ent",
+         "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plan_entity_plus_ma", "rung": "gsm8k",
+         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
     ]
 
     device_str = "cuda" if args.use_gpu else "cpu"
@@ -334,14 +390,18 @@ if __name__ == "__main__":
         # rebuild recipe_path without running prep
         ENTITY_SFT = "data/multiarith_sft_train_entity_aug.txt"
         recipe_path = {
-            "base":              "data/multiarith_sft_train_base.txt",
-            "numaug":            "data/multiarith_sft_train_aug.txt",
-            "plan_base":         "data/multiarith_sft_train_plan.txt",
-            "plan_numaug":       "data/multiarith_sft_train_plan_aug.txt",
-            "entity_numaug":     ENTITY_SFT,
-            "gsm8k":             "data/gsm8k_sft_train.txt",
-            "gsm8k_plus_ma":     "data/gsm8k_plus_ma_sft_train.txt",
-            "gsm8k_plus_entity": "data/gsm8k_plus_entity_sft_train.txt",
+            "base":                        "data/multiarith_sft_train_base.txt",
+            "numaug":                      "data/multiarith_sft_train_aug.txt",
+            "plan_base":                   "data/multiarith_sft_train_plan.txt",
+            "plan_numaug":                 "data/multiarith_sft_train_plan_aug.txt",
+            "entity_numaug":               ENTITY_SFT,
+            "gsm8k":                       "data/gsm8k_sft_train.txt",
+            "gsm8k_plus_ma":               "data/gsm8k_plus_ma_sft_train.txt",
+            "gsm8k_plus_entity":           "data/gsm8k_plus_entity_sft_train.txt",
+            "gsm8k_plan_skeleton":         "data/gsm8k_sft_train_plan_skeleton.txt",
+            "gsm8k_plan_entity":           "data/gsm8k_sft_train_plan_entity.txt",
+            "gsm8k_plan_skeleton_plus_ma": "data/gsm8k_plan_skeleton_plus_ma.txt",
+            "gsm8k_plan_entity_plus_ma":   "data/gsm8k_plan_entity_plus_ma.txt",
         }
 
     if not _exists(args.arith_init_path):
