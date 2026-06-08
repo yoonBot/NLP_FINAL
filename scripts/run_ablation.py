@@ -165,11 +165,12 @@ def _load_template_labels() -> dict[int, bool]:
 
 
 def evaluate(model: ReasoningGPT, dev: list[dict], template_labels: dict,
-             max_new_tokens: int = 256) -> dict:
+             max_new_tokens: int = 256, save_path: str = None) -> dict:
     model.eval()
     records    = []
     in_tmpl_records  = []
     out_tmpl_records = []
+    generation_log   = []
 
     for rec in dev:
         prompt = f"Question: {rec['question']}\n\nReasoning:\n"
@@ -187,6 +188,21 @@ def evaluate(model: ReasoningGPT, dev: list[dict], template_labels: dict,
             else:
                 out_tmpl_records.append(entry)
 
+        if save_path is not None:
+            pred, source = gsm8k_eval.extract_pred_answer(continuation)
+            generation_log.append({
+                "id":             tid,
+                "question":       rec["question"],
+                "gold":           rec["gold_answer"],
+                "generation":     continuation,
+                "pred":           pred,
+                "pred_source":    source,
+                "correct":        (pred is not None and rec["gold_answer"] is not None
+                                   and abs(pred - float(rec["gold_answer"])) <= 1e-6),
+                "format_valid":   gsm8k_eval.is_format_valid(continuation),
+                "has_repetition": gsm8k_eval.has_repetition(continuation),
+            })
+
     metrics = gsm8k_eval.evaluate(records)
     if in_tmpl_records:
         m_in = gsm8k_eval.evaluate(in_tmpl_records)
@@ -194,6 +210,12 @@ def evaluate(model: ReasoningGPT, dev: list[dict], template_labels: dict,
     if out_tmpl_records:
         m_out = gsm8k_eval.evaluate(out_tmpl_records)
         metrics["held_out_template_accuracy"] = m_out["exact_accuracy"]
+
+    if save_path is not None and generation_log:
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(generation_log, f, ensure_ascii=False, indent=2)
+        print(f"  -> generations saved to {save_path}")
+
     return metrics
 
 
@@ -326,9 +348,11 @@ def run_experiment(cfg: dict, arith_init_path: str, out_dir: str = "outputs",
     if best_ckpt is not None:
         saved = torch.load(best_ckpt, map_location="cpu", weights_only=False)
         model.load_state_dict(saved["model"])
+        gen_save_path = os.path.join(out_dir, f"{exp_id}_generations.json")
         full_metrics = evaluate(
             model, dev_records, template_labels,
             max_new_tokens=cfg.get("max_eval_tokens", 256),
+            save_path=gen_save_path,
         )
         print(f"  FINAL full-dev eval: "
               f"acc={full_metrics['exact_accuracy']:.4f} (n={len(dev_records)})")
