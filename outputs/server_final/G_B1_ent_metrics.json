@@ -1,0 +1,19 @@
+{
+  "exp_id": "G_B1_ent",
+  "init": "ckpt:MA_plan_numaug",
+  "train_data": "data/gsm8k_sft_train_plan_entity.txt",
+  "rung": "gsm8k",
+  "best_epoch": 7,
+  "best_accuracy": 0.026,
+  "format_valid_rate": 0.738,
+  "no_answer_rate": 0.028,
+  "repetition_rate": 0.424,
+  "in_template_accuracy": null,
+  "held_out_template_accuracy": null,
+  "subset_eval_n": 150,
+  "full_dev_n": 500,
+  "subset_best_accuracy": 0.04666666666666667,
+  "checkpoint": "/mnt/outputs/G_B1_ent_best.pt",
+  "total_epochs_run": 12,
+  "elapsed_s": 12782.5
+}

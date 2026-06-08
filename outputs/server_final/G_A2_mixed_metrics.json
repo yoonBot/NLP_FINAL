@@ -1,0 +1,19 @@
+{
+  "exp_id": "G_A2_mixed",
+  "init": "arith",
+  "train_data": "data/gsm8k_plus_ma_sft_train.txt",
+  "rung": "gsm8k",
+  "best_epoch": 0,
+  "best_accuracy": 0.02,
+  "format_valid_rate": 0.428,
+  "no_answer_rate": 0.026,
+  "repetition_rate": 0.548,
+  "in_template_accuracy": null,
+  "held_out_template_accuracy": null,
+  "subset_eval_n": 150,
+  "full_dev_n": 500,
+  "subset_best_accuracy": 0.02666666666666667,
+  "checkpoint": "/mnt/outputs/G_A2_mixed_best.pt",
+  "total_epochs_run": 5,
+  "elapsed_s": 8674.9
+}

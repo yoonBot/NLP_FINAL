@@ -1,0 +1,157 @@
+nohup: ignoring input
+
+=== STEP 2: EXPERIMENTS ===
+
+[06:13:25] Starting 8 experiments
+[06:13:25] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[06:13:25] out_dir: /mnt/outputs
+  [SKIP] MA_plan_numaug already done  (acc=0.911)
+[06:13:25] [DONE] MA_plan_numaug  acc=0.911  elapsed=10553s
+  [SKIP] G_A1_direct already done  (acc=0.022)
+[06:13:25] [DONE] G_A1_direct  acc=0.022  elapsed=9537s
+  [SKIP] G_A2_mixed already done  (acc=0.020)
+[06:13:26] [DONE] G_A2_mixed  acc=0.020  elapsed=8675s
+  [SKIP] G_B1_std already done  (acc=0.024)
+[06:13:26] [DONE] G_B1_std  acc=0.024  elapsed=10269s
+
+============================================================
+  EXP  : G_B1_skel
+  init : ckpt:MA_plan_numaug  |  data : data/gsm8k_sft_train_plan_skeleton.txt
+  rung : gsm8k  |  device : cuda
+============================================================
+Loaded examples: 3000
+Examples missing EOS: 0
+Min length: 88
+Max length: 486
+Average length: 194.77033333333333
+First example preview:
+"0\n\nQuestion: Tamara is 3 times Kim's height less 4 inches. Tamara and Kim have a combined height of 92 inches. How many inches tall is Tamara?\n\nPlan: Solve in 2 steps. (1) calculate; (2) calculate; then give the final answer.\n\nReasoning:\nLet K = Kim's height\nTamara = 3K - 4\nK + 3K - 4 = 92\n4K - 4 = "
+EOS token id: 50256
+Last 20 tokens: [1731, 13219, 19, 28, 3104, 4211, 3104, 8331, 198, 42061, 3301, 318, 8257, 8331, 7331, 13, 198, 4242, 8257, 50256]
+'hes tall.\n#### 68<|endoftext|>'
+' per fruit\n#### 2<|endoftext|>'
+'>40 each.\n#### 40<|endoftext|>'
+  dev: 500 total  |  per-epoch eval on first 150
+  [init] curriculum checkpoint from /mnt/outputs/MA_plan_numaug_best.pt
+  epoch   0  loss=2.1975  acc=0.0333  fmt=0.1400  elapsed=1385s
+  epoch   1  loss=1.6887  acc=0.0267  fmt=0.2800  elapsed=2625s
+  epoch   2  loss=1.5714  acc=0.0333  fmt=0.3667  elapsed=3779s
+  epoch   3  loss=1.5010  acc=0.0200  fmt=0.6600  elapsed=4649s
+  epoch   4  loss=1.4499  acc=0.0067  fmt=0.6000  elapsed=5580s
+  [early stop] no improvement for 4 epochs.
+  -> generations saved to /mnt/outputs/G_B1_skel_generations.json
+  FINAL full-dev eval: acc=0.0220 (n=500)
+  -> metrics saved to /mnt/outputs/G_B1_skel_metrics.json
+[08:44:51] [DONE] G_B1_skel  acc=0.022  elapsed=8997s
+
+============================================================
+  EXP  : G_B2_skel
+  init : ckpt:MA_plan_numaug  |  data : data/gsm8k_plan_skeleton_plus_ma.txt
+  rung : gsm8k  |  device : cuda
+============================================================
+Loaded examples: 6061
+Examples missing EOS: 0
+Min length: 88
+Max length: 486
+Average length: 148.7967332123412
+First example preview:
+"0\n\nQuestion: Tamara is 3 times Kim's height less 4 inches. Tamara and Kim have a combined height of 92 inches. How many inches tall is Tamara?\n\nPlan: Solve in 2 steps. (1) calculate; (2) calculate; then give the final answer.\n\nReasoning:\nLet K = Kim's height\nTamara = 3K - 4\nK + 3K - 4 = 92\n4K - 4 = "
+EOS token id: 50256
+Last 20 tokens: [1731, 13219, 19, 28, 3104, 4211, 3104, 8331, 198, 42061, 3301, 318, 8257, 8331, 7331, 13, 198, 4242, 8257, 50256]
+'hes tall.\n#### 68<|endoftext|>'
+' per fruit\n#### 2<|endoftext|>'
+'>40 each.\n#### 40<|endoftext|>'
+  dev: 500 total  |  per-epoch eval on first 150
+  [init] curriculum checkpoint from /mnt/outputs/MA_plan_numaug_best.pt
+  epoch   0  loss=1.3542  acc=0.0200  fmt=0.7800  elapsed=1057s
+  epoch   1  loss=1.0762  acc=0.0267  fmt=0.8533  elapsed=2044s
+  epoch   2  loss=1.0050  acc=0.0133  fmt=0.9467  elapsed=2926s
+  epoch   3  loss=0.9589  acc=0.0200  fmt=0.9533  elapsed=3789s
+  epoch   4  loss=0.9292  acc=0.0267  fmt=0.9733  elapsed=4622s
+  epoch   5  loss=0.9038  acc=0.0200  fmt=0.9533  elapsed=5510s
+  [early stop] no improvement for 4 epochs.
+  -> generations saved to /mnt/outputs/G_B2_skel_generations.json
+  FINAL full-dev eval: acc=0.0240 (n=500)
+  -> metrics saved to /mnt/outputs/G_B2_skel_metrics.json
+[10:40:04] [DONE] G_B2_skel  acc=0.024  elapsed=6811s
+
+============================================================
+  EXP  : G_B1_ent
+  init : ckpt:MA_plan_numaug  |  data : data/gsm8k_sft_train_plan_entity.txt
+  rung : gsm8k  |  device : cuda
+============================================================
+Loaded examples: 3000
+Examples missing EOS: 0
+Min length: 86
+Max length: 504
+Average length: 194.86466666666666
+First example preview:
+"0\n\nQuestion: Tamara is 3 times Kim's height less 4 inches. Tamara and Kim have a combined height of 92 inches. How many inches tall is Tamara?\n\nPlan: find Kim, then calculate Tamara, then give the final answer.\n\nReasoning:\nLet K = Kim's height\nTamara = 3K - 4\nK + 3K - 4 = 92\n4K - 4 = 92\n4K = 96\nKim "
+EOS token id: 50256
+Last 20 tokens: [1731, 13219, 19, 28, 3104, 4211, 3104, 8331, 198, 42061, 3301, 318, 8257, 8331, 7331, 13, 198, 4242, 8257, 50256]
+'hes tall.\n#### 68<|endoftext|>'
+' per fruit\n#### 2<|endoftext|>'
+'>40 each.\n#### 40<|endoftext|>'
+  dev: 500 total  |  per-epoch eval on first 150
+  [init] curriculum checkpoint from /mnt/outputs/MA_plan_numaug_best.pt
+  epoch   0  loss=2.4956  acc=0.0200  fmt=0.2333  elapsed=1296s
+  epoch   1  loss=1.9101  acc=0.0067  fmt=0.3733  elapsed=2450s
+  epoch   2  loss=1.7582  acc=0.0133  fmt=0.6000  elapsed=3390s
+  epoch   3  loss=1.6667  acc=0.0267  fmt=0.5667  elapsed=4359s
+  epoch   4  loss=1.5999  acc=0.0133  fmt=0.5200  elapsed=5384s
+  epoch   5  loss=1.5458  acc=0.0067  fmt=0.7133  elapsed=6222s
+  epoch   6  loss=1.5054  acc=0.0133  fmt=0.6733  elapsed=7113s
+  epoch   7  loss=1.4687  acc=0.0467  fmt=0.7600  elapsed=7931s
+  epoch   8  loss=1.4358  acc=0.0067  fmt=0.7467  elapsed=8762s
+  epoch   9  loss=1.4079  acc=0.0133  fmt=0.8200  elapsed=9542s
+  epoch  10  loss=1.3826  acc=0.0067  fmt=0.7067  elapsed=10411s
+  epoch  11  loss=1.3590  acc=0.0200  fmt=0.8267  elapsed=11187s
+  [early stop] no improvement for 4 epochs.
+  -> generations saved to /mnt/outputs/G_B1_ent_generations.json
+  FINAL full-dev eval: acc=0.0260 (n=500)
+  -> metrics saved to /mnt/outputs/G_B1_ent_metrics.json
+[14:14:30] [DONE] G_B1_ent  acc=0.026  elapsed=12782s
+
+============================================================
+  EXP  : G_B2_ent
+  init : ckpt:MA_plan_numaug  |  data : data/gsm8k_plan_entity_plus_ma.txt
+  rung : gsm8k  |  device : cuda
+============================================================
+Loaded examples: 6061
+Examples missing EOS: 0
+Min length: 86
+Max length: 504
+Average length: 148.84342517736349
+First example preview:
+"0\n\nQuestion: Tamara is 3 times Kim's height less 4 inches. Tamara and Kim have a combined height of 92 inches. How many inches tall is Tamara?\n\nPlan: find Kim, then calculate Tamara, then give the final answer.\n\nReasoning:\nLet K = Kim's height\nTamara = 3K - 4\nK + 3K - 4 = 92\n4K - 4 = 92\n4K = 96\nKim "
+EOS token id: 50256
+Last 20 tokens: [1731, 13219, 19, 28, 3104, 4211, 3104, 8331, 198, 42061, 3301, 318, 8257, 8331, 7331, 13, 198, 4242, 8257, 50256]
+'hes tall.\n#### 68<|endoftext|>'
+' per fruit\n#### 2<|endoftext|>'
+'>40 each.\n#### 40<|endoftext|>'
+  dev: 500 total  |  per-epoch eval on first 150
+  [init] curriculum checkpoint from /mnt/outputs/MA_plan_numaug_best.pt
+  epoch   0  loss=1.5219  acc=0.0400  fmt=0.7733  elapsed=1037s
+  epoch   1  loss=1.1949  acc=0.0400  fmt=0.8600  elapsed=1972s
+  epoch   2  loss=1.1052  acc=0.0267  fmt=0.9333  elapsed=2860s
+  epoch   3  loss=1.0490  acc=0.0200  fmt=0.9067  elapsed=3770s
+  epoch   4  loss=1.0137  acc=0.0200  fmt=0.8800  elapsed=4684s
+  [early stop] no improvement for 4 epochs.
+  -> generations saved to /mnt/outputs/G_B2_ent_generations.json
+  FINAL full-dev eval: acc=0.0280 (n=500)
+  -> metrics saved to /mnt/outputs/G_B2_ent_metrics.json
+[15:58:45] [DONE] G_B2_ent  acc=0.028  elapsed=6164s
+[15:58:45] Finished. 8 results collected.
+
+=== RESULTS ===
+
+exp_id                   init           rung            acc     fmt    ep     sec
+--------------------------------------------------------------------------------
+G_A1_direct              arith          gsm8k         0.022   0.228     1    9537
+G_A2_mixed               arith          gsm8k         0.020   0.428     0    8674
+G_B1_ent                 ckpt:MA_plan_  gsm8k         0.026   0.738     7   12782
+G_B1_skel                ckpt:MA_plan_  gsm8k         0.022   0.128     0    8996
+G_B1_std                 ckpt:MA_plan_  gsm8k         0.024   0.156     1   10269
+G_B2_ent                 ckpt:MA_plan_  gsm8k         0.028   0.744     0    6164
+G_B2_skel                ckpt:MA_plan_  gsm8k         0.024   0.832     1    6810
+MA_plan_numaug           arith          multiarith    0.911   1.000    34   10553

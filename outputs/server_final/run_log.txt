@@ -1,0 +1,226 @@
+[19:43:07] Starting 5 experiments
+[19:43:07] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[19:43:07] out_dir: /mnt/outputs
+[19:45:13] [ERROR] MA_plan_numaug
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 268, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 281, in run_experiment
+    loss.backward()
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[19:46:45] [ERROR] G_A1_direct
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 268, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 276, in run_experiment
+    logits = model(b_ids, b_mask)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 88, in forward
+    out = self.gpt(input_ids, attention_mask)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mnt/NLP_FINAL/models/gpt2.py", line 90, in forward
+    sequence_output = self.encode(embedding_output, attention_mask=attention_mask)
+  File "/mnt/NLP_FINAL/models/gpt2.py", line 77, in encode
+    hidden_states = layer_module(hidden_states, extended_attention_mask)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mnt/NLP_FINAL/modules/gpt2_layer.py", line 27, in forward
+    self.self_attention(self.attention_layer_norm(hidden_states), attention_mask),
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mnt/NLP_FINAL/modules/attention.py", line 82, in forward
+    attn_value = self.attention(key_layer, query_layer, value_layer, attention_mask)
+  File "/mnt/NLP_FINAL/modules/attention.py", line 39, in attention
+    attn_scores = torch.matmul(query,key.transpose(-1,-2)) / self.attention_head_size**0.5 ## b h t(q) t(k)
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[19:48:40] Starting 5 experiments
+[19:48:40] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[19:48:40] out_dir: /mnt/outputs
+[19:51:31] Starting 5 experiments
+[19:51:31] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[19:51:31] out_dir: /mnt/outputs
+[19:54:13] Starting 5 experiments
+[19:54:13] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[19:54:13] out_dir: /mnt/outputs
+[19:58:36] Starting 5 experiments
+[19:58:36] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[19:58:36] out_dir: /mnt/outputs
+[22:55:57] [DONE] MA_plan_numaug  acc=0.911  elapsed=10553s
+[22:57:28] [ERROR] G_A1_direct
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 268, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 276, in run_experiment
+    logits = model(b_ids, b_mask)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 89, in forward
+    return self.gpt.hidden_state_to_token(out["last_hidden_state"])
+  File "/mnt/NLP_FINAL/models/gpt2.py", line 107, in hidden_state_to_token
+    return hidden_state @ self.word_embedding.weight.T
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[22:58:55] [ERROR] G_A2_mixed
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 268, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 281, in run_experiment
+    loss.backward()
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[23:00:25] [ERROR] G_B1_curriculum
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 268, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 276, in run_experiment
+    logits = model(b_ids, b_mask)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 89, in forward
+    return self.gpt.hidden_state_to_token(out["last_hidden_state"])
+  File "/mnt/NLP_FINAL/models/gpt2.py", line 107, in hidden_state_to_token
+    return hidden_state @ self.word_embedding.weight.T
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[23:01:48] [ERROR] G_B2_curriculum_mix
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 268, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 281, in run_experiment
+    loss.backward()
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[23:01:48] Finished. 1 results collected.
+[07:03:59] Starting 5 experiments
+[07:03:59] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[07:03:59] out_dir: /mnt/outputs
+[07:03:59] [DONE] MA_plan_numaug  acc=0.911  elapsed=10553s
+[07:37:54] Starting 5 experiments
+[07:37:54] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[07:37:54] out_dir: /mnt/outputs
+[07:37:54] [DONE] MA_plan_numaug  acc=0.911  elapsed=10553s
+[10:18:24] [DONE] G_A1_direct  acc=0.022  elapsed=9537s
+[12:44:31] [DONE] G_A2_mixed  acc=0.020  elapsed=8675s
+[13:19:39] Starting 5 experiments
+[13:19:39] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[13:19:39] out_dir: /mnt/outputs
+[13:19:39] [DONE] MA_plan_numaug  acc=0.911  elapsed=10553s
+[13:19:39] [DONE] G_A1_direct  acc=0.022  elapsed=9537s
+[13:19:40] [DONE] G_A2_mixed  acc=0.020  elapsed=8675s
+[18:48:22] Starting 8 experiments
+[18:48:22] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[18:48:22] out_dir: /mnt/outputs
+[18:48:22] [DONE] MA_plan_numaug  acc=0.911  elapsed=10553s
+[18:48:22] [DONE] G_A1_direct  acc=0.022  elapsed=9537s
+[18:48:22] [DONE] G_A2_mixed  acc=0.020  elapsed=8675s
+[21:41:04] [DONE] G_B1_std  acc=0.024  elapsed=10269s
+[21:44:57] [ERROR] G_B1_skel
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 328, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 281, in run_experiment
+    loss.backward()
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[21:47:32] [ERROR] G_B2_skel
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 328, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 281, in run_experiment
+    loss.backward()
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[21:50:33] [ERROR] G_B1_ent
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 328, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 281, in run_experiment
+    loss.backward()
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[21:53:11] [ERROR] G_B2_ent
+Traceback (most recent call last):
+  File "/mnt/NLP_FINAL/run_pipeline.py", line 328, in run_experiments
+    result = run_experiment(
+  File "/mnt/NLP_FINAL/scripts/run_ablation.py", line 281, in run_experiment
+    loss.backward()
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/mnt/miniconda/lib/python3.9/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":1015, please report a bug to PyTorch. 
+
+[21:53:11] Finished. 4 results collected.
+[05:34:06] Starting 8 experiments
+[05:34:06] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[05:34:06] out_dir: /mnt/outputs
+[05:34:06] [DONE] MA_plan_numaug  acc=0.911  elapsed=10553s
+[05:34:06] [DONE] G_A1_direct  acc=0.022  elapsed=9537s
+[05:34:06] [DONE] G_A2_mixed  acc=0.020  elapsed=8675s
+[05:34:07] [DONE] G_B1_std  acc=0.024  elapsed=10269s
+[06:13:25] Starting 8 experiments
+[06:13:25] arith_init_path: /mnt/cot_large_integer_arithmetic_pretrain.pt
+[06:13:25] out_dir: /mnt/outputs
+[06:13:25] [DONE] MA_plan_numaug  acc=0.911  elapsed=10553s
+[06:13:25] [DONE] G_A1_direct  acc=0.022  elapsed=9537s
+[06:13:26] [DONE] G_A2_mixed  acc=0.020  elapsed=8675s
+[06:13:26] [DONE] G_B1_std  acc=0.024  elapsed=10269s
+[08:44:51] [DONE] G_B1_skel  acc=0.022  elapsed=8997s
+[10:40:04] [DONE] G_B2_skel  acc=0.024  elapsed=6811s
+[14:14:30] [DONE] G_B1_ent  acc=0.026  elapsed=12782s
+[15:58:45] [DONE] G_B2_ent  acc=0.028  elapsed=6164s
+[15:58:45] Finished. 8 results collected.

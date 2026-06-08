@@ -1,0 +1,19 @@
+{
+  "exp_id": "G_A1_direct",
+  "init": "arith",
+  "train_data": "data/gsm8k_sft_train.txt",
+  "rung": "gsm8k",
+  "best_epoch": 1,
+  "best_accuracy": 0.022,
+  "format_valid_rate": 0.228,
+  "no_answer_rate": 0.026,
+  "repetition_rate": 0.778,
+  "in_template_accuracy": null,
+  "held_out_template_accuracy": null,
+  "subset_eval_n": 150,
+  "full_dev_n": 500,
+  "subset_best_accuracy": 0.02666666666666667,
+  "checkpoint": "/mnt/outputs/G_A1_direct_best.pt",
+  "total_epochs_run": 6,
+  "elapsed_s": 9537.3
+}

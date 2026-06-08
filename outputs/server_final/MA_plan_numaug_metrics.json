@@ -1,0 +1,19 @@
+{
+  "exp_id": "MA_plan_numaug",
+  "init": "arith",
+  "train_data": "data/multiarith_sft_train_plan_aug.txt",
+  "rung": "multiarith",
+  "best_epoch": 34,
+  "best_accuracy": 0.9111111111111111,
+  "format_valid_rate": 1.0,
+  "no_answer_rate": 0.0,
+  "repetition_rate": 0.0,
+  "in_template_accuracy": 0.975,
+  "held_out_template_accuracy": 0.86,
+  "subset_eval_n": null,
+  "full_dev_n": 90,
+  "subset_best_accuracy": 0.9111111111111111,
+  "checkpoint": "/mnt/outputs/MA_plan_numaug_best.pt",
+  "total_epochs_run": 40,
+  "elapsed_s": 10553.1
+}

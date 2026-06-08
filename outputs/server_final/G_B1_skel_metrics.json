@@ -1,0 +1,19 @@
+{
+  "exp_id": "G_B1_skel",
+  "init": "ckpt:MA_plan_numaug",
+  "train_data": "data/gsm8k_sft_train_plan_skeleton.txt",
+  "rung": "gsm8k",
+  "best_epoch": 0,
+  "best_accuracy": 0.022,
+  "format_valid_rate": 0.128,
+  "no_answer_rate": 0.06,
+  "repetition_rate": 0.716,
+  "in_template_accuracy": null,
+  "held_out_template_accuracy": null,
+  "subset_eval_n": 150,
+  "full_dev_n": 500,
+  "subset_best_accuracy": 0.03333333333333333,
+  "checkpoint": "/mnt/outputs/G_B1_skel_best.pt",
+  "total_epochs_run": 5,
+  "elapsed_s": 8996.7
+}
