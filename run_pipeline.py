@@ -281,20 +281,22 @@ def run_experiments(args, recipe_path):
          "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
 
         # ── B-skeleton: curriculum → GSM8K skeleton plan CoT ─────────────────
+        # plan line adds ~56 tokens → max_len 486; batch_size halved to stay in 10GB
         {"id": "G_B1_skel",
          "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plan_skeleton", "rung": "gsm8k",
-         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
+         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": max(1, _bs // 2), "eval_n": 150},
         {"id": "G_B2_skel",
          "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plan_skeleton_plus_ma", "rung": "gsm8k",
-         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
+         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": max(1, _bs // 2), "eval_n": 150},
 
         # ── B-entity: curriculum → GSM8K entity-abstract plan CoT (PS+) ──────
+        # plan line adds ~74 tokens → max_len 504; batch_size halved to stay in 10GB
         {"id": "G_B1_ent",
          "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plan_entity", "rung": "gsm8k",
-         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
+         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": max(1, _bs // 2), "eval_n": 150},
         {"id": "G_B2_ent",
          "init": "ckpt:MA_plan_numaug", "recipe": "gsm8k_plan_entity_plus_ma", "rung": "gsm8k",
-         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": _bs, "eval_n": 150},
+         "epochs": _ep, "lr": _curr_lr, "patience": _pat, "batch_size": max(1, _bs // 2), "eval_n": 150},
     ]
 
     device_str = "cuda" if args.use_gpu else "cpu"
