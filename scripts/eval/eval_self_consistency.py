@@ -28,6 +28,7 @@ Usage
 Outputs
 -------
     outputs/<checkpoint_basename>_<rung>_sc_k{k}_eval.json
+    outputs/<checkpoint_basename>_<rung>_sc_k{k}_samples.json  (with --save_samples)
 """
 
 import argparse
@@ -185,6 +186,7 @@ def main():
     any_correct     = 0      # pass@k: at least one of k samples correct
     no_answer       = 0      # voted prediction is None
     vote_agreements = []     # top_count / k per item
+    sample_log      = []     # optional raw generations
 
     in_tmpl_total = in_tmpl_correct = 0
     out_tmpl_total = out_tmpl_correct = 0
@@ -221,6 +223,25 @@ def main():
             any_correct += 1
         vote_agreements.append(top_count / args.k if args.k > 0 else 0.0)
 
+        if args.save_samples:
+            sample_log.append({
+                "id": rec.get("id"),
+                "question": rec["question"],
+                "gold": gold,
+                "voted_pred": voted_value,
+                "top_count": top_count,
+                "correct": is_sc_correct,
+                "sample_values": sample_values,
+                "samples": [
+                    {
+                        "generation": _continuation(text, prompt),
+                        "pred": sample_values[i],
+                        "correct": _is_correct(sample_values[i], gold),
+                    }
+                    for i, text in enumerate(samples_text)
+                ],
+            })
+
         # ── template split (multiarith only) ────────────────────────────────
         tid = rec["id"]
         if tid in template_labels:
@@ -256,11 +277,21 @@ def main():
     out_path = os.path.join(
         args.out_dir, f"{name}_{args.rung}_sc_k{args.k}_eval.json"
     )
+    samples_path = os.path.join(
+        args.out_dir, f"{name}_{args.rung}_sc_k{args.k}_samples.json"
+    )
+    if args.save_samples:
+        metrics["samples_path"] = samples_path
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)
+    if args.save_samples:
+        with open(samples_path, "w", encoding="utf-8") as f:
+            json.dump(sample_log, f, ensure_ascii=False, indent=2)
 
     print(json.dumps(metrics, indent=2))
     print(f"Metrics -> {out_path}")
+    if args.save_samples:
+        print(f"Samples -> {samples_path}")
 
 
 def get_args():
@@ -278,6 +309,8 @@ def get_args():
     p.add_argument("--out_dir", default=DEFAULT_OUT_DIR)
     p.add_argument("--use_gpu", action="store_true")
     p.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    p.add_argument("--save_samples", action="store_true",
+                   help="Write per-question raw sampled generations.")
     return p.parse_args()
 
 
