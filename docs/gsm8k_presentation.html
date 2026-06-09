@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GPT-2 Small GSM8K Reasoning Experiment Report</title>
+  <style>
+    :root {
+      --bg: #f6f4ee;
+      --paper: #fffdf7;
+      --ink: #202124;
+      --muted: #666a70;
+      --line: #d9d2c3;
+      --red: #b9403a;
+      --blue: #2f5f91;
+      --green: #41745a;
+      --gold: #a36b1f;
+      --violet: #6b5a8f;
+      --panel: #f0ece2;
+      --code: #272822;
+      --codeInk: #f8f8f2;
+      --shadow: 0 18px 45px rgba(48, 41, 32, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    .deck {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 28px 24px 64px;
+    }
+
+    .slide {
+      position: relative;
+      min-height: 690px;
+      margin: 0 0 28px;
+      padding: 46px 54px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 8px;
+      background: linear-gradient(90deg, var(--blue), var(--green) 35%, var(--gold) 70%, var(--red));
+    }
+
+    .kicker {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3 { line-height: 1.16; margin: 0; letter-spacing: 0; }
+    h1 { font-size: 54px; max-width: 900px; }
+    h2 { font-size: 38px; margin-bottom: 20px; }
+    h3 { font-size: 21px; margin: 22px 0 10px; }
+    p { margin: 0 0 14px; }
+    .lead { font-size: 22px; color: #3a3c40; max-width: 920px; margin-top: 22px; }
+    .small { font-size: 13px; color: var(--muted); }
+    .note { color: var(--muted); font-size: 15px; }
+    strong { font-weight: 800; }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 36px;
+      align-items: end;
+      min-height: 540px;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 36px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      background: #f7f2e7;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    .score-wall {
+      display: grid;
+      gap: 12px;
+    }
+
+    .score {
+      padding: 18px 20px;
+      background: var(--panel);
+      border-left: 6px solid var(--blue);
+    }
+    .score.red { border-left-color: var(--red); }
+    .score.green { border-left-color: var(--green); }
+    .score.gold { border-left-color: var(--gold); }
+    .score .num { display: block; font-size: 42px; font-weight: 850; line-height: 1; }
+    .score .label { color: var(--muted); font-size: 14px; margin-top: 7px; }
+
+    .two-col, .three-col, .four-col {
+      display: grid;
+      gap: 20px;
+      align-items: start;
+    }
+    .two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .four-col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 18px 18px 16px;
+    }
+    .box h3 { margin-top: 0; }
+    .box.accent-blue { border-top: 5px solid var(--blue); }
+    .box.accent-red { border-top: 5px solid var(--red); }
+    .box.accent-green { border-top: 5px solid var(--green); }
+    .box.accent-gold { border-top: 5px solid var(--gold); }
+
+    ul, ol { margin: 10px 0 0; padding-left: 22px; }
+    li { margin: 6px 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 14px 0 0;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #ece5d7;
+      font-weight: 800;
+      color: #2d2d2d;
+    }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .hi { color: var(--red); font-weight: 850; }
+    .ok { color: var(--green); font-weight: 850; }
+    .blue { color: var(--blue); font-weight: 850; }
+
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    pre {
+      background: var(--code);
+      color: var(--codeInk);
+      padding: 16px;
+      overflow: auto;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 12px 0 0;
+      white-space: pre-wrap;
+    }
+    .inline-code { background: #e9e1d2; padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .step {
+      min-height: 116px;
+      padding: 14px;
+      background: #f3efe5;
+      border: 1px solid var(--line);
+      position: relative;
+    }
+    .step::after {
+      content: "→";
+      position: absolute;
+      right: -15px;
+      top: 39px;
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 22px;
+    }
+    .step:last-child::after { display: none; }
+    .step b { display: block; margin-bottom: 7px; }
+    .step span { color: var(--muted); font-size: 13px; }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .event {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 18px;
+      border-left: 4px solid var(--blue);
+      background: var(--panel);
+      padding: 13px 16px;
+    }
+    .event .date { font-weight: 850; color: var(--blue); }
+
+    .bar-table { margin-top: 16px; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 72px;
+      gap: 12px;
+      align-items: center;
+      margin: 9px 0;
+      font-size: 14px;
+    }
+    .track { height: 18px; background: #e6dfd2; border: 1px solid var(--line); }
+    .bar { height: 100%; background: var(--blue); }
+    .bar.green { background: var(--green); }
+    .bar.red { background: var(--red); }
+    .bar.gold { background: var(--gold); }
+
+    .quote {
+      border-left: 5px solid var(--red);
+      background: #f4e8e2;
+      padding: 16px 18px;
+      font-size: 18px;
+      margin: 18px 0 0;
+    }
+
+    .callout {
+      background: #ecf0ea;
+      border: 1px solid #c7d3c7;
+      padding: 18px 20px;
+      margin-top: 16px;
+    }
+
+    .footer {
+      position: absolute;
+      left: 54px;
+      bottom: 24px;
+      right: 54px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .toc {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .toc a {
+      display: block;
+      color: var(--ink);
+      text-decoration: none;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 14px;
+      min-height: 72px;
+    }
+    .toc b { display: block; color: var(--blue); margin-bottom: 5px; }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .tag { border: 1px solid var(--line); background: #f3eadb; padding: 5px 9px; font-size: 12px; font-weight: 700; }
+
+    @media (max-width: 900px) {
+      .deck { padding: 12px; }
+      .slide { padding: 34px 24px; min-height: auto; }
+      .hero-grid, .two-col, .three-col, .four-col, .flow, .toc { grid-template-columns: 1fr; }
+      .step::after { display: none; }
+      h1 { font-size: 38px; }
+      h2 { font-size: 30px; }
+      .footer { position: static; margin-top: 28px; }
+    }
+
+    @media print {
+      body { background: white; }
+      .deck { max-width: none; padding: 0; }
+      .slide {
+        min-height: 100vh;
+        page-break-after: always;
+        box-shadow: none;
+        border: 0;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <section class="slide" id="title">
+      <div class="hero-grid">
+        <div>
+          <div class="kicker">CSEG321 인간언어기술개론 · Final Project</div>
+          <h1>GPT-2 Small은 GSM8K 추론을 어디서 실패하는가?</h1>
+          <p class="lead">CoT-SFT, DPO, 산술 사전학습, MultiArith 커리큘럼, Plan-then-Solve, Self-Consistency까지의 시행착오와 최종 분석.</p>
+          <div class="meta">
+            <div class="pill"><b>모델</b><br>GPT-2 small 124M, 자체 구현</div>
+            <div class="pill"><b>환경</b><br>A100 MIG 1g.10gb, Colab T4 초기 실험</div>
+            <div class="pill"><b>핵심 데이터</b><br>GSM8K, MultiArith</div>
+            <div class="pill"><b>최종 결론</b><br>format 문제가 아니라 operation-selection/capacity bottleneck</div>
+          </div>
+        </div>
+        <div class="score-wall">
+          <div class="score green"><span class="num">91.1%</span><div class="label">MultiArith plan-CoT 최종 정확도</div></div>
+          <div class="score red"><span class="num">2.8%</span><div class="label">GSM8K greedy full-dev 최고</div></div>
+          <div class="score gold"><span class="num">4.0%</span><div class="label">GSM8K SC@8 dev150 최고</div></div>
+          <div class="score"><span class="num">14.7%</span><div class="label">any_correct@8 최고: 정답 후보가 한 번이라도 나온 비율</div></div>
+        </div>
+      </div>
+      <div class="footer"><span>Sources: docs/project_summary.md, docs/experiments.md, Claude memory, outputs/server_final</span><span>2026-06-09</span></div>
+    </section>
+
+    <section class="slide" id="toc">
+      <div class="kicker">Presentation Map</div>
+      <h2>발표 흐름</h2>
+      <div class="toc">
+        <a href="#problem"><b>1. 문제 정의</b>왜 GSM8K를 골랐고 무엇을 검증하려 했는가</a>
+        <a href="#failure"><b>2. 초기 실패</b>SFT 1.6%, DPO 0.8%, calculator +1%p</a>
+        <a href="#data"><b>3. 데이터 가공</b>MultiArith 숫자치환, plan-CoT, GSM8K plan 생성</a>
+        <a href="#pipeline"><b>4. 학습 설계</b>arith init → MA curriculum → GSM8K arms</a>
+        <a href="#results"><b>5. 정량 결과</b>greedy, lower-LR, self-consistency</a>
+        <a href="#qual"><b>6. 정성 분석</b>raw generation, trace 오류, majority miss</a>
+        <a href="#rl"><b>7. RL 검토</b>왜 포기했고, 했다면 무엇을 했어야 했는가</a>
+        <a href="#takeaway"><b>8. 최종 메시지</b>실패를 어떻게 연구 결과로 만들었는가</a>
+      </div>
+      <div class="footer"><span>발표용 단일 HTML</span><span>Navigation</span></div>
+    </section>
+
+    <section class="slide" id="problem">
+      <div class="kicker">Research Framing</div>
+      <h2>목표는 “높은 점수”보다 실패 원인 분해였다</h2>
+      <div class="two-col">
+        <div class="box accent-blue">
+          <h3>과제 맥락</h3>
+          <ul>
+            <li>CS224n-style Build GPT-2 프로젝트의 Step 2: 자체 downstream task 연구.</li>
+            <li>Rubric상 성능 향상 실패 자체도 허용된다. 중요한 것은 정직한 평가와 원인 분석.</li>
+            <li>초기 가설: CoT-SFT + DPO가 GPT-2 small의 reasoning task 성능을 올릴 수 있는가.</li>
+          </ul>
+        </div>
+        <div class="box accent-red">
+          <h3>결국 바뀐 질문</h3>
+          <p>“GSM8K를 GPT-2 small로 얼마나 올릴 수 있는가?”에서 “왜 안 올라가는가, 어느 계층에서 깨지는가?”로 이동했다.</p>
+          <div class="quote">핵심 병목은 산술 계산이 아니라 <strong>operation-selection</strong>: 문제 의미를 올바른 연산 그래프로 바꾸는 능력.</div>
+        </div>
+      </div>
+      <div class="tag-row">
+        <span class="tag">GPT-2 small 124M</span><span class="tag">GSM8K</span><span class="tag">CoT-SFT</span><span class="tag">DPO</span><span class="tag">Plan-then-Solve</span><span class="tag">Self-Consistency</span>
+      </div>
+      <div class="footer"><span>Claude memory: project-framing</span><span>Problem</span></div>
+    </section>
+
+    <section class="slide" id="failure">
+      <div class="kicker">Phase 0</div>
+      <h2>초기 파이프라인은 형식과 내용의 분리를 보여줬다</h2>
+      <div class="two-col">
+        <div>
+          <table>
+            <thead><tr><th>방법</th><th class="num">GSM8K acc</th><th class="num">fmt</th><th class="num">repeat</th><th class="num">no_ans</th></tr></thead>
+            <tbody>
+              <tr><td>vanilla GPT-2 → CoT-SFT</td><td class="num hi">1.6%</td><td class="num ok">95.8%</td><td class="num">4%</td><td class="num">0%</td></tr>
+              <tr><td>SFT → DPO</td><td class="num hi">0.8%</td><td class="num hi">0.4%</td><td class="num">34%</td><td class="num">31%</td></tr>
+            </tbody>
+          </table>
+          <div class="callout"><strong>해석:</strong> SFT는 <span class="inline-code">#### N</span> 형식은 거의 배웠지만 정답을 못 맞혔다. DPO는 off-policy chosen과 likelihood displacement로 format collapse를 일으켰다.</div>
+        </div>
+        <div>
+          <h3>계산기 시뮬레이션 진단</h3>
+          <pre>already correct          :   8  (1.6%)
+calculator fixes answer  :   5  (+1.0%p)
+still wrong reasoning   : 482
+
+결론: 산술만 고쳐도 2.6% 수준.
+오답의 대부분은 연산 선택 자체가 틀림.</pre>
+        </div>
+      </div>
+      <div class="footer"><span>docs/handoffs/20260603_handoff.md</span><span>Initial Failure</span></div>
+    </section>
+
+    <section class="slide" id="hypothesis">
+      <div class="kicker">Hypothesis Pivot</div>
+      <h2>산술 사전학습을 “계산 능력”이 아니라 “초기화”로 해석했다</h2>
+      <div class="two-col">
+        <div class="box accent-red">
+          <h3>H1: 실행 가설</h3>
+          <p>산술 pretrain → 계산이 정확해져 GSM8K가 오른다.</p>
+          <p class="hi">calculator sim +1%p로 이미 약해졌다.</p>
+        </div>
+        <div class="box accent-green">
+          <h3>H2: 초기화/표본효율 가설</h3>
+          <p>산술 pretrain이 계산을 배우는 비용을 줄이고, SFT가 operation-selection 학습에 더 많은 용량을 쓰게 한다.</p>
+          <p class="ok">직접 반증되지는 않았고, 실험 설계의 동기가 됐다.</p>
+        </div>
+      </div>
+      <div class="flow">
+        <div class="step"><b>Stage 0</b><span>large-integer arithmetic pretrain checkpoint</span></div>
+        <div class="step"><b>Stage 1</b><span>MultiArith 2-step plan-CoT curriculum</span></div>
+        <div class="step"><b>Stage 2</b><span>GSM8K SFT with/without plan alignment</span></div>
+        <div class="step"><b>Phase 3</b><span>SC@8, lower-LR continuation</span></div>
+        <div class="step"><b>Analysis</b><span>raw trace, calculator tag, majority miss</span></div>
+      </div>
+      <div class="footer"><span>docs/research_note_arith_init_gsm8k.md</span><span>Hypothesis</span></div>
+    </section>
+
+    <section class="slide" id="data">
+      <div class="kicker">Data Processing</div>
+      <h2>데이터셋은 “많이 섞기”보다 “분포를 통제해 늘리기”로 가공했다</h2>
+      <div class="three-col">
+        <div class="box accent-blue">
+          <h3>MultiArith 숫자치환</h3>
+          <ul>
+            <li>600개 모두 거의 2-step, 양의 정수 답, 연산 조합이 균질.</li>
+            <li>SingleEq/SVAMP 등 sibling dataset 병합은 분포가 달라 기각.</li>
+            <li><span class="inline-code">lEquations</span>, <span class="inline-code">lAlignments</span>로 숫자만 치환.</li>
+            <li>중간값/답 양의 정수, 나눗셈 정수, 뺄셈 비음수 제약.</li>
+          </ul>
+        </div>
+        <div class="box accent-green">
+          <h3>dev 누수 통제</h3>
+          <ul>
+            <li>train 510 / dev 90 split.</li>
+            <li>dev는 절대 증강하지 않음.</li>
+            <li>train-source만 증강해 leakage 방지.</li>
+            <li>in-template / held-out-template audit로 암기와 일반화 분리.</li>
+          </ul>
+        </div>
+        <div class="box accent-gold">
+          <h3>GSM8K plan 데이터</h3>
+          <ul>
+            <li>초기 plan은 숫자와 답 계산이 노출되어 재설계.</li>
+            <li>skeleton: 연산자 순서만, 숫자 0개.</li>
+            <li>entity: 엔티티+연산 서술, 숫자 0개.</li>
+            <li>목표는 answer leakage가 아니라 operation-selection supervision.</li>
+          </ul>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>파일</th><th class="num">블록 수</th><th>역할</th></tr></thead>
+        <tbody>
+          <tr><td>multiarith_sft_train_plan_aug.txt</td><td class="num">3,061</td><td>Stage 1 plan-CoT curriculum</td></tr>
+          <tr><td>gsm8k_sft_train.txt</td><td class="num">3,000</td><td>GSM8K standard baseline</td></tr>
+          <tr><td>gsm8k_plan_skeleton_plus_ma.txt</td><td class="num">6,061</td><td>skeleton plan + MA anchor</td></tr>
+          <tr><td>gsm8k_plan_entity_plus_ma.txt</td><td class="num">6,061</td><td>entity plan + MA anchor</td></tr>
+        </tbody>
+      </table>
+      <div class="footer"><span>Claude memory: multiarith-augmentation</span><span>Data</span></div>
+    </section>
+
+    <section class="slide" id="formats">
+      <div class="kicker">Data Format</div>
+      <h2>같은 계산기 포맷을 유지하되 Plan 헤더를 조절했다</h2>
+      <div class="two-col">
+        <div>
+          <h3>MultiArith plan-then-solve</h3>
+          <pre>Question: ...
+
+Plan: 2단계. (1) find total apples; (2) subtract eaten;
+
+Reasoning:
+32 + 42 = &lt;&lt;32+42=74&gt;&gt;74
+74 - 35 = &lt;&lt;74-35=39&gt;&gt;39
+#### 39</pre>
+          <p class="note">MultiArith는 균질한 2-step 환경이라 plan supervision이 잘 작동했다.</p>
+        </div>
+        <div>
+          <h3>GSM8K skeleton/entity plan</h3>
+          <pre>Skeleton:
+Plan: Solve in N steps. (1) multiply; (2) add; then give the final answer.
+
+Entity:
+Plan: find Kim's height, then calculate Tamara's height, then give the final answer.</pre>
+          <p class="note">숫자를 제거해 leakage를 막았지만, operation-selection 자체는 여전히 모델이 배워야 했다.</p>
+        </div>
+      </div>
+      <div class="footer"><span>scripts/generate/generate_gsm8k_plan.py</span><span>Formats</span></div>
+    </section>
+
+    <section class="slide" id="pipeline">
+      <div class="kicker">Training Pipeline</div>
+      <h2>실험은 커리큘럼과 포맷 정렬을 분리하도록 구성했다</h2>
+      <div class="flow">
+        <div class="step"><b>arith init</b><span>cot_large_integer_arithmetic_pretrain.pt</span></div>
+        <div class="step"><b>MA_plan_numaug</b><span>MultiArith plan aug 3,061 blocks</span></div>
+        <div class="step"><b>A arms</b><span>arith → GSM8K direct / mixed</span></div>
+        <div class="step"><b>B arms</b><span>MA ckpt → standard / skeleton / entity</span></div>
+        <div class="step"><b>extra</b><span>SC@8 + lower-LR continuation</span></div>
+      </div>
+      <table>
+        <thead><tr><th>arm</th><th>init</th><th>data</th><th>왜 필요한가</th></tr></thead>
+        <tbody>
+          <tr><td>G_A1_direct</td><td>arith</td><td>GSM8K</td><td>산술-init 단독 효과</td></tr>
+          <tr><td>G_A2_mixed</td><td>arith</td><td>GSM8K+MA</td><td>MA 혼합의 format/repetition 효과</td></tr>
+          <tr><td>G_B1_std</td><td>MA ckpt</td><td>GSM8K standard</td><td>포맷 불일치가 얼마나 해로운지 측정</td></tr>
+          <tr><td>G_B2_skel</td><td>MA ckpt</td><td>skeleton+MA</td><td>MA anchor로 plan format 유지</td></tr>
+          <tr><td>G_B2_ent</td><td>MA ckpt</td><td>entity+MA</td><td>PS+ 스타일 자연어 plan의 효과</td></tr>
+        </tbody>
+      </table>
+      <div class="footer"><span>run_pipeline.py, scripts/run_ablation.py</span><span>Pipeline</span></div>
+    </section>
+
+    <section class="slide" id="troubles">
+      <div class="kicker">Engineering Trial and Error</div>
+      <h2>성능 실험 이전에 파이프라인 자체도 여러 번 고쳤다</h2>
+      <div class="timeline">
+        <div class="event"><div class="date">06-03</div><div><b>top-p / max_length / eval 정리</b><br>SFT 생성과 평가가 안정적으로 돌도록 top-p sampling 버그, max_length 혼재, SFT/HF 평가 스크립트를 수정.</div></div>
+        <div class="event"><div class="date">06-03</div><div><b>DPO collapse</b><br>DPO 3epoch 후 format_valid 0.4%까지 붕괴. chosen=gold reasoning, rejected=model wrong의 off-policy 구조가 문제로 진단.</div></div>
+        <div class="event"><div class="date">06-05</div><div><b>MultiArith 증강</b><br>dataset merge 대신 숫자치환으로 분포 보존. dev 불증강 원칙 고정.</div></div>
+        <div class="event"><div class="date">06-06</div><div><b>OOM / 평가 시간</b><br>GSM8K epoch별 dev500 평가가 너무 느려 eval_n=150으로 축소. plan arm max_len 증가로 batch 8→4 조정.</div></div>
+        <div class="event"><div class="date">06-08</div><div><b>raw generation 저장</b><br>정량 acc만으로 부족해 full-dev generation JSON을 저장하도록 수정.</div></div>
+        <div class="event"><div class="date">06-09</div><div><b>SC raw sample 저장</b><br>self-consistency aggregate뿐 아니라 k개 raw sample을 저장해 majority miss 분석 가능.</div></div>
+      </div>
+      <div class="footer"><span>handoff, run_log, pipeline.log</span><span>Trials</span></div>
+    </section>
+
+    <section class="slide" id="results">
+      <div class="kicker">Quantitative Results</div>
+      <h2>최종 정량 결과: MultiArith는 성공, GSM8K는 실패</h2>
+      <table>
+        <thead><tr><th>exp_id</th><th>data</th><th class="num">acc</th><th class="num">correct</th><th class="num">fmt</th><th class="num">repeat</th><th class="num">best_ep</th></tr></thead>
+        <tbody>
+          <tr><td>MA_plan_numaug</td><td>MA plan aug</td><td class="num ok">0.911</td><td class="num">82/90</td><td class="num ok">1.000</td><td class="num ok">0.000</td><td class="num">34</td></tr>
+          <tr><td>G_A1_direct</td><td>GSM8K</td><td class="num">0.022</td><td class="num">11/500</td><td class="num">0.228</td><td class="num hi">0.778</td><td class="num">1</td></tr>
+          <tr><td>G_A2_mixed</td><td>GSM8K+MA</td><td class="num">0.020</td><td class="num">10/500</td><td class="num">0.428</td><td class="num hi">0.548</td><td class="num">0</td></tr>
+          <tr><td>G_B1_std</td><td>MA→GSM8K standard</td><td class="num">0.024</td><td class="num">12/500</td><td class="num">0.156</td><td class="num hi">0.796</td><td class="num">1</td></tr>
+          <tr><td>G_B2_skel</td><td>skeleton+MA</td><td class="num">0.024</td><td class="num">12/500</td><td class="num ok">0.832</td><td class="num ok">0.146</td><td class="num">1</td></tr>
+          <tr><td>G_B2_ent</td><td>entity+MA</td><td class="num hi">0.028</td><td class="num">14/500</td><td class="num">0.744</td><td class="num">0.188</td><td class="num">0</td></tr>
+          <tr><td>G_B2_skel_lr1e6</td><td>skeleton+MA lower-LR</td><td class="num hi">0.028</td><td class="num">14/500</td><td class="num">0.684</td><td class="num">0.224</td><td class="num">1</td></tr>
+        </tbody>
+      </table>
+      <div class="bar-table">
+        <div class="bar-row"><b>B1_std fmt</b><div class="track"><div class="bar red" style="width:15.6%"></div></div><span>15.6%</span></div>
+        <div class="bar-row"><b>B2_skel fmt</b><div class="track"><div class="bar green" style="width:83.2%"></div></div><span>83.2%</span></div>
+        <div class="bar-row"><b>B1_std repeat</b><div class="track"><div class="bar red" style="width:79.6%"></div></div><span>79.6%</span></div>
+        <div class="bar-row"><b>B2_skel repeat</b><div class="track"><div class="bar green" style="width:14.6%"></div></div><span>14.6%</span></div>
+      </div>
+      <div class="footer"><span>outputs/server_final/*_metrics.json</span><span>Results</span></div>
+    </section>
+
+    <section class="slide" id="format-vs-acc">
+      <div class="kicker">Key Finding</div>
+      <h2>포맷을 고쳐도 정답률은 안 올랐다</h2>
+      <div class="two-col">
+        <div class="box accent-green">
+          <h3>B2_skel이 해결한 것</h3>
+          <ul>
+            <li>fmt: 0.156 → 0.832</li>
+            <li>repeat: 0.796 → 0.146</li>
+            <li>no_ans: 0.042 → 0.008</li>
+          </ul>
+          <p>MA 혼합 데이터가 plan-format anchor 역할을 하면서 출력 궤적을 안정화했다.</p>
+        </div>
+        <div class="box accent-red">
+          <h3>그래도 못 푼 것</h3>
+          <ul>
+            <li>B1_std: 형식 도달 78개 중 12개 정답</li>
+            <li>B2_skel: 형식 도달 416개 중 12개 정답</li>
+            <li>형식 도달률이 5배 늘어도 정답 수는 그대로</li>
+          </ul>
+          <p class="hi">병목은 formatting이 아니라 operation-selection.</p>
+        </div>
+      </div>
+      <div class="quote">이 실험이 가장 강한 증거다. Plan은 출력을 안정화했지만 문제 의미를 올바른 연산 그래프로 바꾸지는 못했다.</div>
+      <div class="footer"><span>G_B1_std vs G_B2_skel</span><span>Format vs Accuracy</span></div>
+    </section>
+
+    <section class="slide" id="sc">
+      <div class="kicker">Self-Consistency</div>
+      <h2>SC는 후보를 만들었지만 고르지 못했다</h2>
+      <table>
+        <thead><tr><th>checkpoint</th><th class="num">SC acc</th><th class="num">correct</th><th class="num">any_correct@8</th><th class="num">candidate exists</th><th class="num">vote agreement</th></tr></thead>
+        <tbody>
+          <tr><td>G_B2_ent_best</td><td class="num hi">0.040</td><td class="num">6/150</td><td class="num">0.133</td><td class="num">20/150</td><td class="num">0.328</td></tr>
+          <tr><td>G_B2_skel_best</td><td class="num">0.020</td><td class="num">3/150</td><td class="num ok">0.147</td><td class="num">22/150</td><td class="num">0.334</td></tr>
+          <tr><td>G_B2_ent_lr1e6</td><td class="num">0.033</td><td class="num">5/150</td><td class="num">0.080</td><td class="num">12/150</td><td class="num">0.318</td></tr>
+          <tr><td>G_B2_skel_lr1e6</td><td class="num">0.033</td><td class="num">5/150</td><td class="num">0.127</td><td class="num">19/150</td><td class="num">0.283</td></tr>
+        </tbody>
+      </table>
+      <div class="two-col" style="margin-top:18px">
+        <div class="box accent-blue"><h3>긍정 신호</h3><p>8개 샘플 중 하나라도 정답인 경우가 최대 14.7% 존재했다. 즉 모델 분포 안에 약한 정답 후보는 있다.</p></div>
+        <div class="box accent-red"><h3>한계</h3><p>정답 completion은 대개 1~2개뿐이고 오답 후보가 더 자주 나와 majority vote에서 밀린다. SC 최고도 4.0%로 5% 미달.</p></div>
+      </div>
+      <div class="footer"><span>outputs/server_final/sc_eval/*</span><span>SC</span></div>
+    </section>
+
+    <section class="slide" id="qual">
+      <div class="kicker">Qualitative Raw Log Analysis</div>
+      <h2>raw generation은 “그럴듯한 CoT”와 “맞는 reasoning”이 다르다는 것을 보여준다</h2>
+      <div class="three-col">
+        <div class="box accent-red">
+          <h3>의미 해석 실패</h3>
+          <pre>Question: Hazel got 6 shirts.
+Razel got twice as many.
+
+Model:
+6 + Razel = 12
+12 * 6 = 72
+#### 72</pre>
+          <p class="note">twice를 2배 관계로 안정적으로 해석하지 못하고, 엔티티를 숫자처럼 취급.</p>
+        </div>
+        <div class="box accent-gold">
+          <h3>백분율 처리 실패</h3>
+          <pre>Question: 25% gain, then 50% gain.
+
+Model:
+25 + 50 = 75
+75 * 400 = 750
+#### 750</pre>
+          <p class="note">정답 숫자가 맞아도 실제 percentage reasoning은 아니다.</p>
+        </div>
+        <div class="box accent-blue">
+          <h3>반복 루프</h3>
+          <pre>Jerry was in the pool for 2 minutes...
+Jerry was in the pool for 2 minutes...
+Jerry was in the pool for 2 minutes...</pre>
+          <p class="note">plan+MA는 반복을 줄였지만 복잡한 문제에서는 여전히 고확률 구절 루프가 발생.</p>
+        </div>
+      </div>
+      <div class="footer"><span>outputs/server_final/*_generations.json</span><span>Qualitative</span></div>
+    </section>
+
+    <section class="slide" id="trace">
+      <div class="kicker">Trace Faithfulness</div>
+      <h2>심지어 <span class="inline-code">&lt;&lt;expr=result&gt;&gt;</span> 내부 계산도 자주 거짓이었다</h2>
+      <table>
+        <thead><tr><th>arm</th><th class="num">재계산 가능 태그</th><th class="num">잘못된 태그</th><th class="num">오류 row</th><th class="num">정답 row 중 오류</th></tr></thead>
+        <tbody>
+          <tr><td>B1_ent</td><td class="num">398</td><td class="num hi">185</td><td class="num">123/500</td><td class="num">2/13</td></tr>
+          <tr><td>B1_skel</td><td class="num">215</td><td class="num hi">90</td><td class="num">31/500</td><td class="num">1/11</td></tr>
+          <tr><td>B2_ent</td><td class="num">771</td><td class="num hi">298</td><td class="num">204/500</td><td class="num">4/14</td></tr>
+          <tr><td>B2_skel</td><td class="num">849</td><td class="num hi">333</td><td class="num">227/500</td><td class="num">6/12</td></tr>
+          <tr><td>B2_skel_lr1e6</td><td class="num">727</td><td class="num hi">212</td><td class="num">153/500</td><td class="num">1/14</td></tr>
+        </tbody>
+      </table>
+      <div class="two-col" style="margin-top:18px">
+        <pre>25 + 30 = 65
+200 * 0 = 200
+75 * 400 = 750
+6 + Razel = 12</pre>
+        <div class="callout"><strong>해석:</strong> 최종 acc는 정상 reasoning 성공률을 과대평가한다. 맞은 문제에도 우연, fallback, 산술 불일치가 섞여 있다.</div>
+      </div>
+      <div class="footer"><span>raw trace recalculation audit</span><span>Trace</span></div>
+    </section>
+
+    <section class="slide" id="dataset-wide">
+      <div class="kicker">Coverage</div>
+      <h2>새 방법은 넓은 문제군을 풀기보다 일부 쉬운/우연 문제를 반복해서 맞혔다</h2>
+      <div class="two-col">
+        <div class="box accent-blue">
+          <h3>정답 ID 겹침</h3>
+          <ul>
+            <li>여섯 generation 파일 전체에서 한 번이라도 맞은 dev 문제: <strong>42/500</strong></li>
+            <li>여러 arm에서 반복적으로 맞은 문제 ID: 90, 49, 96, 240, 167, 244, 28 등 소수</li>
+            <li>모델이 새로운 문제 유형을 넓게 커버했다고 보기 어렵다.</li>
+          </ul>
+        </div>
+        <div class="box accent-red">
+          <h3>정답 유형</h3>
+          <ul>
+            <li>진짜 2-step 산술: sandwiches + bread 같은 단순 문제</li>
+            <li>우연 정답: 잘못된 중간 계산인데 마지막 숫자가 맞음</li>
+            <li>fallback 정답: <span class="inline-code">####</span> 없이 마지막 숫자가 gold와 일치</li>
+          </ul>
+        </div>
+      </div>
+      <div class="quote">정답률 2.8%조차 “정상 reasoning”만으로 구성된 숫자가 아니다.</div>
+      <div class="footer"><span>correct ID overlap analysis</span><span>Coverage</span></div>
+    </section>
+
+    <section class="slide" id="rl">
+      <div class="kicker">Why Not RL</div>
+      <h2>RL은 검토했지만, 지금 신호에서는 포기하는 게 맞았다</h2>
+      <div class="two-col">
+        <div class="box accent-red">
+          <h3>full PPO/GRPO가 위험한 이유</h3>
+          <ul>
+            <li>any_correct@8 최고가 14.7%라 reward가 너무 sparse.</li>
+            <li>정답 completion도 trace가 깨진 경우가 많아 우연 shortcut을 강화할 수 있음.</li>
+            <li>자체 GPT-2 trainer에 PPO/GRPO를 붙이려면 old logprob, KL, reward normalization, length bias 제어가 필요.</li>
+          </ul>
+        </div>
+        <div class="box accent-green">
+          <h3>시간이 있었다면 우선순위</h3>
+          <ol>
+            <li>strict-filter mini-STaR / rejection SFT</li>
+            <li>model-generated correct-vs-wrong DPO</li>
+            <li>small verifier/reranker</li>
+            <li>마지막에 GRPO-lite</li>
+          </ol>
+          <p class="note">핵심은 final answer만 보지 않고 repetition, format, 계산 태그 sanity를 같이 필터링하는 것.</p>
+        </div>
+      </div>
+      <pre>RL-style methods were not executed because outcome rewards were sparse and positive traces were often unfaithful. Directly optimizing final-answer reward could reinforce spurious shortcuts rather than improve operation selection.</pre>
+      <div class="footer"><span>Future work framing</span><span>RL</span></div>
+    </section>
+
+    <section class="slide" id="takeaway">
+      <div class="kicker">Final Takeaway</div>
+      <h2>이 프로젝트의 결과는 “성능 향상”보다 “실패 원인 분해”다</h2>
+      <div class="four-col">
+        <div class="score green"><span class="num">✓</span><div class="label">MultiArith 2-step은 plan-CoT로 학습 가능</div></div>
+        <div class="score gold"><span class="num">✓</span><div class="label">Plan+MA는 format/repetition을 크게 개선</div></div>
+        <div class="score red"><span class="num">✕</span><div class="label">GSM8K accuracy는 2.8%/4.0%에서 정체</div></div>
+        <div class="score"><span class="num">!</span><div class="label">trace faithfulness와 operation-selection이 핵심 병목</div></div>
+      </div>
+      <div class="quote">Plan-then-Solve CoT는 작은 모델에서도 출력 형식과 반복 억제에는 효과적이었다. 그러나 GSM8K 정확도는 거의 오르지 않았고, raw trace는 모델이 문제 의미를 연산 그래프로 안정적으로 변환하지 못한다는 것을 보여준다.</div>
+      <h3>발표 마지막 문장</h3>
+      <p class="lead">GPT-2 small에서 GSM8K 실패는 단순 format collapse가 아니라, operation-selection과 trace faithfulness의 capacity-bound 문제다.</p>
+      <div class="footer"><span>Conclusion</span><span>End</span></div>
+    </section>
+  </main>
+</body>
+</html>
