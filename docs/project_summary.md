@@ -481,18 +481,34 @@ G_B2_ent는 전체 greedy arm 중 최고 acc이지만 14/500 정답이다. B2_sk
 
 **결론**: entity plan은 최고 acc를 만들었지만, 포맷 안정성은 skeleton+MA가 더 좋다. 둘 다 2~3%대에 머물러서 병목은 plan 포맷이 아니라 GSM8K operation-selection 자체다.
 
-### 6.8 10시간 추가 실험 — 진행 중
+### 6.8 10시간 추가 실험 — 완료
 
-추가 실험 커밋 `29a72f8`에서 `run_extra_10h.py`를 추가했다. 목적은 학습을 단순히 오래 돌리는 것이 아니라, test-time sampling과 더 약한 update로 5% 근처 신호를 찾는 것이다.
+추가 실험 커밋 `29a72f8`의 `run_extra_10h.py`는 2026-06-09 서버 로그 기준 `02:22:08`에 완료되었다. 목적은 학습 시간을 단순히 늘리는 것이 아니라, test-time sampling과 더 약한 update가 5% 근처 신호를 만드는지 확인하는 것이었다.
 
-실행 큐:
-1. `G_B2_ent_best.pt` self-consistency: k=8, temp=0.8, top_p=0.95, dev150
-2. `G_B2_skel_best.pt` self-consistency: 동일 설정
-3. `G_B2_ent_lr1e6`: MA ckpt → entity+MA, lr=1e-6, epochs=8, patience=3, batch=4
-4. `G_B2_skel_lr1e6`: MA ckpt → skeleton+MA, 동일 설정
-5. lower-LR checkpoint 2개에 self-consistency dev150
+#### lower-LR continuation 결과
 
-SC는 `*_eval.json`뿐 아니라 `*_samples.json`에 k개 raw generation도 저장한다. 핵심 판단 지표는 `self_consistency_accuracy`와 `any_correct_rate`다. `any_correct_rate`가 높고 SC가 낮으면 majority vote보다 verifier/selection이 필요하다는 신호다.
+| exp_id | 데이터 | full-dev greedy acc | fmt | repeat | no_ans | best_ep | total_ep | elapsed |
+|--------|--------|---------------------|-----|--------|--------|---------|----------|---------|
+| G_B2_ent_lr1e6 | entity+MA | 0.026 | 0.712 | 0.192 | 0.032 | 3 | 7 | 8,708s |
+| G_B2_skel_lr1e6 | skeleton+MA | **0.028** | 0.684 | 0.224 | 0.012 | 1 | 5 | 7,112s |
+
+lower-LR는 catastrophic drift를 줄일 가능성을 봤지만, full-dev greedy 기준으로 기존 최고 `G_B2_ent=0.028`을 넘지 못했다. `G_B2_skel_lr1e6`은 acc=0.028로 동률이나, 기존 `G_B2_skel` 대비 fmt가 0.832→0.684로 낮아지고 repeat도 0.146→0.224로 악화되었다.
+
+#### Self-consistency 결과 (dev150, k=8)
+
+| checkpoint | SC acc | 정답 수 | any_correct@8 | 후보 정답 존재 | mean vote agreement | 해석 |
+|------------|--------|---------|---------------|----------------|---------------------|------|
+| G_B2_ent_best | **0.040** | **6/150** | 0.133 | 20/150 | 0.328 | SC 최고, 5% 미도달 |
+| G_B2_skel_best | 0.020 | 3/150 | **0.147** | **22/150** | 0.334 | 정답 후보는 가장 많지만 vote 실패 |
+| G_B2_ent_lr1e6_best | 0.033 | 5/150 | 0.080 | 12/150 | 0.318 | lower-LR로 후보 다양성 감소 |
+| G_B2_skel_lr1e6_best | 0.033 | 5/150 | 0.127 | 19/150 | 0.283 | vote agreement 최저, SC 3.3% |
+
+**핵심 결론**:
+- SC 최고는 `G_B2_ent_best`의 4.0%(6/150)로, 목표였던 5%에는 도달하지 못했다.
+- any_correct@8 최고는 `G_B2_skel_best`의 14.7%(22/150)다. 정답 후보가 일부 존재하지만 다수결이 이를 고르지 못한다.
+- mean vote agreement가 0.28~0.33으로 낮아 sampling 후보가 넓게 흩어진다. 이는 모델이 안정적인 추론 모드를 갖고 있지 않다는 신호다.
+- any_correct@8이 8~15% 수준이라 PPO/GRPO 같은 outcome-RL을 바로 적용하기에는 reward가 너무 sparse하다. 가능하다면 mini-STaR/rejection SFT가 더 현실적이다.
+
 
 ---
 
@@ -518,13 +534,16 @@ Phase 0  vanilla DPO              →  0.8%   (오히려 하락)
 Phase 2  arith init SFT (A1)      →  2.2%   (+0.6%p, H2 약한 신호)
 Phase 2  MA 커리큘럼 (B1_std)     →  2.4%   (+0.2%p, 포맷 불일치로 커리큘럼 효과 소멸)
 Phase 2  B2_skel                  →  2.4%   (fmt/repeat 해결, acc 미개선)
-Phase 2  B2_ent                   →  2.8%   (최고 acc, +2문제 수준)
-Phase 3  SC/lower-LR extra        →  진행 중 (5% 신호 탐색)
+Phase 2  B2_ent                   →  2.8%   (greedy full-dev 최고, +2문제 수준)
+Phase 3  lower-LR continuation    →  2.8%   (B2_skel_lr1e6, 최고 동률이나 fmt/repeat 악화)
+Phase 3  SC@8 dev150              →  4.0%   (B2_ent_best, 6/150; 5% 미도달)
 ```
 
 ```
 MultiArith (2-step, plan CoT 정렬):  91.1%  ← plan 구조가 통하는 환경에서의 천장
-GSM8K     (다단계, plan+MA 정렬):     2.8%  ← 형식 안정화 후에도 operation-selection 병목
+GSM8K greedy full-dev 최고:           2.8%  ← B2_ent / B2_skel_lr1e6
+GSM8K SC@8 dev150 최고:               4.0%  ← B2_ent_best
+GSM8K any_correct@8 최고:            14.7%  ← B2_skel_best, verifier/STaR의 약한 신호
 ```
 
 ### 7.3 통제된 비교로 확인한 것들
@@ -547,7 +566,7 @@ GSM8K     (다단계, plan+MA 정렬):     2.8%  ← 형식 안정화 후에도 
 | 방법 | 출처 | 우리 적용 여부 |
 |------|------|--------------|
 | Calculator-augmented generation | Cobbe et al., 2021 (GSM8K) | **미적용** — 추론 오류 99%라 효과 없음 (+1%p 확인) |
-| Self-Consistency | Wang et al., 2022 | **진행 중** — `run_extra_10h.py`에서 k=8, dev150, raw samples 저장 |
+| Self-Consistency | Wang et al., 2022 | **적용** — k=8 dev150, 최고 SC 4.0%, any_correct@8 최고 14.7%; 5% 미도달 |
 | Plan-and-Solve PS+ | Wang et al., ACL 2023 | **적용** — entity plan 포맷 설계 참조 |
 | Program-of-Thought / PaD | Chen 2022, Zhu NAACL 2024 | **미적용** — GPT-2 code-pretrain 아님 |
 | TinyGSM verifier | Liu et al., 2023 | **미적용** — 과제 범위 초과 (second model 필요) |
@@ -593,6 +612,8 @@ G_B1_skel_metrics.json / G_B1_skel_generations.json
 G_B2_skel_metrics.json / G_B2_skel_generations.json
 G_B1_ent_metrics.json  / G_B1_ent_generations.json
 G_B2_ent_metrics.json  / G_B2_ent_generations.json
+G_B2_ent_lr1e6_metrics.json  / G_B2_ent_lr1e6_generations.json
+G_B2_skel_lr1e6_metrics.json / G_B2_skel_lr1e6_generations.json
 sc_eval/*_eval.json             # SC aggregate metrics (extra run)
 sc_eval/*_samples.json          # SC raw sampled generations (extra run)
 extra_10h.log                   # 추가 실험 통합 로그
@@ -676,11 +697,31 @@ fmt=0.156: 생성의 84%가 `#### N`까지 도달하지 못함.
 | B1_skel | 11/500 | 64/500 | 358/500 | 2/11 | skeleton 단독은 루핑과 fallback 정답이 지배적 |
 | B2_skel | 12/500 | 416/500 | 73/500 | 12/12 | 형식 안정성 최고, 그러나 연산 선택은 실패 |
 | B1_ent | 13/500 | 369/500 | 212/500 | 10/13 | entity가 fmt는 복구하지만 루핑이 많음 |
-| B2_ent | 14/500 | 372/500 | 94/500 | 10/14 | 최고 acc, 일부 fallback 정답 포함 |
+| B2_ent | 14/500 | 372/500 | 94/500 | 10/14 | greedy 최고 acc, 일부 fallback 정답 포함 |
+| B2_ent_lr1e6 | 13/500 | 356/500 | 96/500 | 10/13 | lower-LR로도 entity 성능 개선 없음 |
+| B2_skel_lr1e6 | 14/500 | 342/500 | 112/500 | 9/14 | acc는 최고 동률이나 fallback 비중 증가 |
 
 대표 실패 양상은 계산 실수보다 plan/operation-selection 오류다. 모델은 `twice`, `%`, `per week`, `per hour` 같은 의미를 연산 그래프로 변환하지 못하고, 문제에 보이는 숫자 둘을 골라 2-step MultiArith식으로 처리한다. 예: `25% + 50%`를 `75`로 더한 뒤 `400`을 곱해 우연히 맞는 경우가 있지만, 이는 백분율 의미를 제대로 계산한 것이 아니다.
 
-**정성 결론**: plan은 답 형식과 루핑을 제어하지만, plan 자체가 틀린 연산을 고른다. 따라서 남은 개선 여지는 더 긴 학습보다 SC/sample-and-select/verifier류에 있다.
+**정성 결론**: plan은 답 형식과 루핑을 제어하지만, plan 자체가 틀린 연산을 고른다. lower-LR continuation도 이 병목을 해결하지 못했다.
+
+### 10.4 Self-consistency raw sample 분석
+
+SC raw sample 기준으로 정답 후보가 존재했지만 다수결이 놓친 사례가 많다.
+
+| checkpoint | any correct | SC correct | majority miss | 평균 고유 예측값 수 | 평균 top-count |
+|------------|-------------|------------|---------------|--------------------|----------------|
+| B2_ent_best | 20/150 | 6/150 | 14/150 | 5.83 | 2.63 |
+| B2_skel_best | 22/150 | 3/150 | 19/150 | 5.87 | 2.67 |
+| B2_ent_lr1e6 | 12/150 | 5/150 | 7/150 | 5.99 | 2.54 |
+| B2_skel_lr1e6 | 19/150 | 5/150 | 14/150 | 6.32 | 2.26 |
+
+관찰:
+- 정답 후보가 있는 문제에서도 정답 completion은 보통 1~2개뿐이라 majority가 오답으로 쏠린다.
+- `B2_skel_best`는 any_correct@8이 가장 높지만 SC acc는 가장 낮다. 후보 생성력과 후보 선택력이 분리되어 있다.
+- verifier/selection은 이론상 개선 여지가 있지만, any_correct@8 자체가 15% 미만이라 큰 폭의 성능 향상은 기대하기 어렵다.
+- PPO/GRPO 같은 outcome reward RL은 reward sparsity가 심하다. 지금 단계에서는 mini-STaR 또는 correct-sample rejection SFT가 더 현실적인 후속 실험이다.
+
 
 ---
 
@@ -700,21 +741,22 @@ fmt=0.156: 생성의 84%가 `#### N`까지 도달하지 못함.
 
 ## 12. 남은 작업 및 한계
 
-### 남은 작업
+### 보고서 반영 포인트
 
 **[정량]**
-1. `run_extra_10h.py` 완료 대기: 기존 B2_ent/B2_skel SC dev150 + lower-LR continuation 2개 + 새 ckpt SC dev150
-2. SC 결과에서 `self_consistency_accuracy`와 `any_correct_rate` 비교
-3. dev150에서 5% 이상 신호가 있으면 최고 checkpoint만 full dev500 SC 실행
-4. greedy vs SC/lower-LR 비교 표 추가
+1. 최종 최고 greedy full-dev는 2.8% (`G_B2_ent`, `G_B2_skel_lr1e6`)로 정리한다.
+2. 최종 최고 SC dev150은 4.0% (`G_B2_ent_best`, 6/150)이며, 5% 목표에는 도달하지 못했다.
+3. any_correct@8 최고는 14.7% (`G_B2_skel_best`, 22/150)로, 정답 후보 생성은 약하게 가능하지만 다수결 선택은 실패한다.
+4. lower-LR continuation은 최고 acc 동률만 만들었고, fmt/repeat 안정성은 오히려 나빠졌다.
 
 **[정성]**
-5. SC `*_samples.json` 기반으로 정답 후보가 존재하지만 majority vote가 놓치는지 확인
-6. `any_correct_rate`가 높으면 verifier/selection을 차후 과제로 제안
-7. raw generation에서 plan 환각/연산 선택 오류 대표 사례 3~5개 선별
+5. 대표 실패 사례는 “형식 붕괴”보다 “틀린 plan/operation-selection”으로 잡는다.
+6. SC raw sample에서는 정답 completion이 소수 후보로 존재하나 majority vote가 고르지 못하는 사례를 제시한다.
+7. 후속 연구는 full RL보다 mini-STaR/rejection SFT/verifier를 제안하되, any_correct@8이 낮아 기대 효과가 제한적임을 명시한다.
 
 ### 확인된 한계 (설계 제약)
 - **누락된 대조군**: vanilla→MA→gsm8k 없음. H2를 커리큘럼까지 주장하려면 필요.
 - **추론시 계산기 미사용**: 사용자 결정. (진단상 +1%p 뿐이라 영향 미미)
 - **verifier 미적용**: 과제 범위 초과.
+- **RL 미적용**: any_correct@8 8~15% 수준이라 outcome reward가 sparse함. PPO/GRPO보다 STaR류가 우선.
 - **모델 용량 한계**: 124M은 GSM8K 다단계 추론에 근본적 한계 (capacity-bound).
