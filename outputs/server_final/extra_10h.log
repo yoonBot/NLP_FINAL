@@ -1,0 +1,160 @@
+[2026-06-08 18:29:53] === 10h extra GSM8K queue start ===
+[2026-06-08 18:29:53] root=/mnt/NLP_FINAL
+[2026-06-08 18:29:53] out_dir=/mnt/outputs
+[2026-06-08 18:29:53] sc_dir=/mnt/outputs/sc_eval
+[2026-06-08 18:29:53] SC settings: k=8, limit=150, T=0.8, top_p=0.95, use_gpu=True
+[2026-06-08 18:29:53] === Phase 1: SC on existing best checkpoints ===
+[2026-06-08 18:29:53] [RUN] SC G_B2_ent: /mnt/miniconda/bin/python scripts/eval/eval_self_consistency.py --checkpoint /mnt/outputs/G_B2_ent_best.pt --rung gsm8k --k 8 --temperature 0.8 --top_p 0.95 --limit 150 --out_dir /mnt/outputs/sc_eval --save_samples --use_gpu
+Self-consistency eval on 150 gsm8k dev items (k=8, T=0.8, top_p=0.95)...
+{
+  "n": 150,
+  "k": 8,
+  "temperature": 0.8,
+  "top_p": 0.95,
+  "self_consistency_accuracy": 0.04,
+  "any_correct_rate": 0.13333333333333333,
+  "mean_vote_agreement": 0.3283333333333333,
+  "no_answer_rate": 0.0,
+  "checkpoint": "/mnt/outputs/G_B2_ent_best.pt",
+  "rung": "gsm8k",
+  "decoding": "self_consistency(k=8,T=0.8)",
+  "samples_path": "/mnt/outputs/sc_eval/G_B2_ent_best_gsm8k_sc_k8_samples.json"
+}
+Metrics -> /mnt/outputs/sc_eval/G_B2_ent_best_gsm8k_sc_k8_eval.json
+Samples -> /mnt/outputs/sc_eval/G_B2_ent_best_gsm8k_sc_k8_samples.json
+[2026-06-08 19:19:32] [DONE] SC G_B2_ent: /mnt/outputs/sc_eval/G_B2_ent_best_gsm8k_sc_k8_eval.json
+[2026-06-08 19:19:32] [RUN] SC G_B2_skel: /mnt/miniconda/bin/python scripts/eval/eval_self_consistency.py --checkpoint /mnt/outputs/G_B2_skel_best.pt --rung gsm8k --k 8 --temperature 0.8 --top_p 0.95 --limit 150 --out_dir /mnt/outputs/sc_eval --save_samples --use_gpu
+Self-consistency eval on 150 gsm8k dev items (k=8, T=0.8, top_p=0.95)...
+{
+  "n": 150,
+  "k": 8,
+  "temperature": 0.8,
+  "top_p": 0.95,
+  "self_consistency_accuracy": 0.02,
+  "any_correct_rate": 0.14666666666666667,
+  "mean_vote_agreement": 0.33416666666666667,
+  "no_answer_rate": 0.0,
+  "checkpoint": "/mnt/outputs/G_B2_skel_best.pt",
+  "rung": "gsm8k",
+  "decoding": "self_consistency(k=8,T=0.8)",
+  "samples_path": "/mnt/outputs/sc_eval/G_B2_skel_best_gsm8k_sc_k8_samples.json"
+}
+Metrics -> /mnt/outputs/sc_eval/G_B2_skel_best_gsm8k_sc_k8_eval.json
+Samples -> /mnt/outputs/sc_eval/G_B2_skel_best_gsm8k_sc_k8_samples.json
+[2026-06-08 20:03:25] [DONE] SC G_B2_skel: /mnt/outputs/sc_eval/G_B2_skel_best_gsm8k_sc_k8_eval.json
+[2026-06-08 20:03:25] === Phase 2: lower-LR continuation experiments ===
+[2026-06-08 20:03:30] [RUN] train G_B2_ent_lr1e6: lr=1e-06 epochs=8 patience=3 batch=4 data=data/gsm8k_plan_entity_plus_ma.txt
+
+============================================================
+  EXP  : G_B2_ent_lr1e6
+  init : ckpt:MA_plan_numaug  |  data : data/gsm8k_plan_entity_plus_ma.txt
+  rung : gsm8k  |  device : cuda
+============================================================
+Loaded examples: 6061
+Examples missing EOS: 0
+Min length: 86
+Max length: 504
+Average length: 148.84342517736349
+First example preview:
+"0\n\nQuestion: Tamara is 3 times Kim's height less 4 inches. Tamara and Kim have a combined height of 92 inches. How many inches tall is Tamara?\n\nPlan: find Kim, then calculate Tamara, then give the final answer.\n\nReasoning:\nLet K = Kim's height\nTamara = 3K - 4\nK + 3K - 4 = 92\n4K - 4 = 92\n4K = 96\nKim "
+EOS token id: 50256
+Last 20 tokens: [1731, 13219, 19, 28, 3104, 4211, 3104, 8331, 198, 42061, 3301, 318, 8257, 8331, 7331, 13, 198, 4242, 8257, 50256]
+'hes tall.\n#### 68<|endoftext|>'
+' per fruit\n#### 2<|endoftext|>'
+'>40 each.\n#### 40<|endoftext|>'
+  dev: 500 total  |  per-epoch eval on first 150
+  [init] curriculum checkpoint from /mnt/outputs/MA_plan_numaug_best.pt
+  epoch   0  loss=1.9889  acc=0.0267  fmt=0.7800  elapsed=1006s
+  epoch   1  loss=1.5229  acc=0.0200  fmt=0.7533  elapsed=2042s
+  epoch   2  loss=1.3857  acc=0.0200  fmt=0.7333  elapsed=3112s
+  epoch   3  loss=1.3062  acc=0.0533  fmt=0.7533  elapsed=4156s
+  epoch   4  loss=1.2594  acc=0.0333  fmt=0.7733  elapsed=5180s
+  epoch   5  loss=1.2217  acc=0.0333  fmt=0.8133  elapsed=6170s
+  epoch   6  loss=1.1894  acc=0.0200  fmt=0.8200  elapsed=7148s
+  [early stop] no improvement for 3 epochs.
+  -> generations saved to /mnt/outputs/G_B2_ent_lr1e6_generations.json
+  FINAL full-dev eval: acc=0.0260 (n=500)
+  -> metrics saved to /mnt/outputs/G_B2_ent_lr1e6_metrics.json
+[2026-06-08 22:30:13] [DONE] train G_B2_ent_lr1e6: acc=0.0260 fmt=0.7120 repeat=0.1920 best_ep=3
+[2026-06-08 22:30:14] [RUN] train G_B2_skel_lr1e6: lr=1e-06 epochs=8 patience=3 batch=4 data=data/gsm8k_plan_skeleton_plus_ma.txt
+
+============================================================
+  EXP  : G_B2_skel_lr1e6
+  init : ckpt:MA_plan_numaug  |  data : data/gsm8k_plan_skeleton_plus_ma.txt
+  rung : gsm8k  |  device : cuda
+============================================================
+Loaded examples: 6061
+Examples missing EOS: 0
+Min length: 88
+Max length: 486
+Average length: 148.7967332123412
+First example preview:
+"0\n\nQuestion: Tamara is 3 times Kim's height less 4 inches. Tamara and Kim have a combined height of 92 inches. How many inches tall is Tamara?\n\nPlan: Solve in 2 steps. (1) calculate; (2) calculate; then give the final answer.\n\nReasoning:\nLet K = Kim's height\nTamara = 3K - 4\nK + 3K - 4 = 92\n4K - 4 = "
+EOS token id: 50256
+Last 20 tokens: [1731, 13219, 19, 28, 3104, 4211, 3104, 8331, 198, 42061, 3301, 318, 8257, 8331, 7331, 13, 198, 4242, 8257, 50256]
+'hes tall.\n#### 68<|endoftext|>'
+' per fruit\n#### 2<|endoftext|>'
+'>40 each.\n#### 40<|endoftext|>'
+  dev: 500 total  |  per-epoch eval on first 150
+  [init] curriculum checkpoint from /mnt/outputs/MA_plan_numaug_best.pt
+  epoch   0  loss=1.7950  acc=0.0133  fmt=0.6800  elapsed=1120s
+  epoch   1  loss=1.3341  acc=0.0267  fmt=0.7133  elapsed=2232s
+  epoch   2  loss=1.2252  acc=0.0267  fmt=0.7533  elapsed=3313s
+  epoch   3  loss=1.1618  acc=0.0267  fmt=0.7733  elapsed=4358s
+  epoch   4  loss=1.1250  acc=0.0200  fmt=0.8000  elapsed=5382s
+  [early stop] no improvement for 3 epochs.
+  -> generations saved to /mnt/outputs/G_B2_skel_lr1e6_generations.json
+  FINAL full-dev eval: acc=0.0280 (n=500)
+  -> metrics saved to /mnt/outputs/G_B2_skel_lr1e6_metrics.json
+[2026-06-09 00:30:13] [DONE] train G_B2_skel_lr1e6: acc=0.0280 fmt=0.6840 repeat=0.2240 best_ep=1
+[2026-06-09 00:30:13] === Phase 3: SC on lower-LR checkpoints ===
+[2026-06-09 00:30:13] [RUN] SC G_B2_ent_lr1e6: /mnt/miniconda/bin/python scripts/eval/eval_self_consistency.py --checkpoint /mnt/outputs/G_B2_ent_lr1e6_best.pt --rung gsm8k --k 8 --temperature 0.8 --top_p 0.95 --limit 150 --out_dir /mnt/outputs/sc_eval --save_samples --use_gpu
+Self-consistency eval on 150 gsm8k dev items (k=8, T=0.8, top_p=0.95)...
+{
+  "n": 150,
+  "k": 8,
+  "temperature": 0.8,
+  "top_p": 0.95,
+  "self_consistency_accuracy": 0.03333333333333333,
+  "any_correct_rate": 0.08,
+  "mean_vote_agreement": 0.3175,
+  "no_answer_rate": 0.0,
+  "checkpoint": "/mnt/outputs/G_B2_ent_lr1e6_best.pt",
+  "rung": "gsm8k",
+  "decoding": "self_consistency(k=8,T=0.8)",
+  "samples_path": "/mnt/outputs/sc_eval/G_B2_ent_lr1e6_best_gsm8k_sc_k8_samples.json"
+}
+Metrics -> /mnt/outputs/sc_eval/G_B2_ent_lr1e6_best_gsm8k_sc_k8_eval.json
+Samples -> /mnt/outputs/sc_eval/G_B2_ent_lr1e6_best_gsm8k_sc_k8_samples.json
+[2026-06-09 01:21:31] [DONE] SC G_B2_ent_lr1e6: /mnt/outputs/sc_eval/G_B2_ent_lr1e6_best_gsm8k_sc_k8_eval.json
+[2026-06-09 01:21:31] [RUN] SC G_B2_skel_lr1e6: /mnt/miniconda/bin/python scripts/eval/eval_self_consistency.py --checkpoint /mnt/outputs/G_B2_skel_lr1e6_best.pt --rung gsm8k --k 8 --temperature 0.8 --top_p 0.95 --limit 150 --out_dir /mnt/outputs/sc_eval --save_samples --use_gpu
+Self-consistency eval on 150 gsm8k dev items (k=8, T=0.8, top_p=0.95)...
+{
+  "n": 150,
+  "k": 8,
+  "temperature": 0.8,
+  "top_p": 0.95,
+  "self_consistency_accuracy": 0.03333333333333333,
+  "any_correct_rate": 0.12666666666666668,
+  "mean_vote_agreement": 0.2825,
+  "no_answer_rate": 0.0,
+  "checkpoint": "/mnt/outputs/G_B2_skel_lr1e6_best.pt",
+  "rung": "gsm8k",
+  "decoding": "self_consistency(k=8,T=0.8)",
+  "samples_path": "/mnt/outputs/sc_eval/G_B2_skel_lr1e6_best_gsm8k_sc_k8_samples.json"
+}
+Metrics -> /mnt/outputs/sc_eval/G_B2_skel_lr1e6_best_gsm8k_sc_k8_eval.json
+Samples -> /mnt/outputs/sc_eval/G_B2_skel_lr1e6_best_gsm8k_sc_k8_samples.json
+[2026-06-09 02:22:08] [DONE] SC G_B2_skel_lr1e6: /mnt/outputs/sc_eval/G_B2_skel_lr1e6_best_gsm8k_sc_k8_eval.json
+[2026-06-09 02:22:08] === Final summary ===
+[2026-06-09 02:22:08] [SUMMARY] G_B2_ent_best_gsm8k_sc_k8_eval.json: {"any_correct_rate": 0.13333333333333333, "k": 8, "mean_vote_agreement": 0.3283333333333333, "n": 150, "no_answer_rate": 0.0, "self_consistency_accuracy": 0.04}
+[2026-06-09 02:22:08] [RAW] /mnt/outputs/sc_eval/G_B2_ent_best_gsm8k_sc_k8_samples.json
+[2026-06-09 02:22:08] [SUMMARY] G_B2_skel_best_gsm8k_sc_k8_eval.json: {"any_correct_rate": 0.14666666666666667, "k": 8, "mean_vote_agreement": 0.33416666666666667, "n": 150, "no_answer_rate": 0.0, "self_consistency_accuracy": 0.02}
+[2026-06-09 02:22:08] [RAW] /mnt/outputs/sc_eval/G_B2_skel_best_gsm8k_sc_k8_samples.json
+[2026-06-09 02:22:08] [SUMMARY] G_B2_ent_lr1e6_metrics.json: {"best_accuracy": 0.026, "best_epoch": 3, "exp_id": "G_B2_ent_lr1e6", "format_valid_rate": 0.712, "no_answer_rate": 0.032, "repetition_rate": 0.192, "total_epochs_run": 7}
+[2026-06-09 02:22:08] [SUMMARY] G_B2_ent_lr1e6_best_gsm8k_sc_k8_eval.json: {"any_correct_rate": 0.08, "k": 8, "mean_vote_agreement": 0.3175, "n": 150, "no_answer_rate": 0.0, "self_consistency_accuracy": 0.03333333333333333}
+[2026-06-09 02:22:08] [RAW] /mnt/outputs/sc_eval/G_B2_ent_lr1e6_best_gsm8k_sc_k8_samples.json
+[2026-06-09 02:22:08] [SUMMARY] G_B2_skel_lr1e6_metrics.json: {"best_accuracy": 0.028, "best_epoch": 1, "exp_id": "G_B2_skel_lr1e6", "format_valid_rate": 0.684, "no_answer_rate": 0.012, "repetition_rate": 0.224, "total_epochs_run": 5}
+[2026-06-09 02:22:08] [SUMMARY] G_B2_skel_lr1e6_best_gsm8k_sc_k8_eval.json: {"any_correct_rate": 0.12666666666666668, "k": 8, "mean_vote_agreement": 0.2825, "n": 150, "no_answer_rate": 0.0, "self_consistency_accuracy": 0.03333333333333333}
+[2026-06-09 02:22:08] [RAW] /mnt/outputs/sc_eval/G_B2_skel_lr1e6_best_gsm8k_sc_k8_samples.json
+[2026-06-09 02:22:08] === 10h extra GSM8K queue complete ===

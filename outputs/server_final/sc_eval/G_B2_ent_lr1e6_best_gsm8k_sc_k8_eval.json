@@ -1,0 +1,14 @@
+{
+  "n": 150,
+  "k": 8,
+  "temperature": 0.8,
+  "top_p": 0.95,
+  "self_consistency_accuracy": 0.03333333333333333,
+  "any_correct_rate": 0.08,
+  "mean_vote_agreement": 0.3175,
+  "no_answer_rate": 0.0,
+  "checkpoint": "/mnt/outputs/G_B2_ent_lr1e6_best.pt",
+  "rung": "gsm8k",
+  "decoding": "self_consistency(k=8,T=0.8)",
+  "samples_path": "/mnt/outputs/sc_eval/G_B2_ent_lr1e6_best_gsm8k_sc_k8_samples.json"
+}
